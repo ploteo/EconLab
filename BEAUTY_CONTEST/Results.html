@@ -1,0 +1,85 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+    <h1>{{ t.results_title }}</h1>
+{{ endblock }}
+
+{{ block content }}
+<div class="card">
+    <!-- <p>Ecco i numeri riportati:</p>
+
+    <p>
+        {{ sorted_guesses }}
+    </p> -->
+    <p>
+        {{ t.average }}: {{ average }}
+    </p>
+    <p>
+        {{ t.target_value }}: {{ target_value }}
+       
+    </p>
+    <p>
+        {{ t.closest_number }}: {{ group.best_guess }}
+    </p>
+
+ {{if player.guess != -99}} 
+
+    <p>{{ t.your_number_was }} {{ player.guess }}</p>
+
+{{else }}
+
+<p>{{ t.did_not_participate }}</p>
+
+{{ endif }}
+
+    <p>
+        {{ if player.is_winner }}
+            {{ if group.num_winners > 1 }}
+                {{ t.congratulations }} <span class="iconify" data-icon="bi:emoji-smile" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
+! {{ t.you_are_one_of }} {{ group.num_winners }} {{ t.participants_with_winning_number }}
+            {{ else }}
+                {{ t.congratulations }} <span class="iconify" data-icon="bi:emoji-smile" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
+! {{ t.you_won }}
+            {{ endif }}
+        {{ else }}
+            {{ t.you_lost }} <span class="iconify" data-icon="fluent:emoji-sad-24-regular" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
+
+        {{ endif }}
+    </p>
+</div>
+<br>
+    <div class="container" style="font-size:18pt">
+      <div class="row">
+        &nbsp;
+      </div>
+      <div class="row" style="padding-left:135px;">
+        <div class="col-md-10">
+
+        </div>
+        <div class="col-md-2">
+          <button name="btn_submit" value="True" class="btn btn-primary btn-large">
+             <span style="font-size:16pt">{{ t.finish }}</span>
+         </button>
+        </div>
+      </div>
+    </div>
+
+
+{{ endblock }}
+
+{{ block styles }}
+    <style>
+        .btn-primary {
+            background-color: #005466;
+            /*formatting goes here*/
+        }
+    </style>
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+
+
+{{ endblock }}
+
+{{block scripts}}
+<script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
+{{ endblock }}

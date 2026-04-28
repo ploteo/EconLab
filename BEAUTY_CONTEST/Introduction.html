@@ -1,0 +1,45 @@
+
+
+{{ block content }}
+
+<div class="card">
+
+    {{ include instructions_template }}
+
+
+    <div class="row justify-content-md-center">
+        <div class="col-md-3">
+            &NonBreakingSpace;
+        </div>
+        <div class="col text-center">
+            <button name="btn_submit" value="True" class="btn btn-primary btn-large">
+                <span>{{ t.start_game }}</span>
+            </button>
+        </div>
+        <div class="col-md-3">
+            &NonBreakingSpace;
+        </div>
+    </div>
+
+</div>
+
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<style>
+    .btn-primary {
+        background-color: #005466;
+        /*formatting goes here*/
+    }
+</style>
+
+
+
+
+{{ endblock }}
+
+{{block scripts}}
+<script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
+{{ endblock }}

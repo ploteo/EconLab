@@ -1,0 +1,124 @@
+
+{% load otree %}
+
+<h2>Beauty Contest ITA – Admin Report (Round {{ round_number }})</h2>
+
+<h3>Distribuzione dei guess</h3>
+{% if guess_values %}
+<div style="max-width: 900px;">
+    <canvas id="guessHistogram" width="900" height="360" style="width: 100%;"></canvas>
+</div>
+{% else %}
+<p>Nessun guess registrato per costruire l'istogramma.</p>
+{% endif %}
+
+<h3>Statistiche di gruppo</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Group ID</th>
+            <th>{{ multiplier_label }} media</th>
+            <th>Best guess</th>
+            <th># vincitori</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for g in group_stats %}
+        <tr>
+            <td>{{ g.group_id }}</td>
+            <td>
+                {% if g.target_value %}{{ g.target_value }}{% else %}—{% endif %}
+            </td>
+            <td>
+                {% if g.best_guess %}{{ g.best_guess }}{% else %}—{% endif %}
+            </td>
+            <td>
+                {% if g.num_winners %}{{ g.num_winners }}{% else %}—{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% if rows %}
+<h3>Dettagli partecipanti</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Partecipante</th>
+            <th>Guess</th>
+            <th>Vincitore?</th>
+            <th>Payoff</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ row.participant }}</td>
+            <td>{{ row.guess_display }}</td>
+            <td>{% if row.is_winner %}Sì{% else %}No{% endif %}</td>
+            <td>{{ row.payoff }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Nessun dato disponibile.</p>
+{% endif %}
+
+{% if guess_values %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function() {
+        const values = {{ guess_values|json }};
+        if (!values.length) return;
+
+        const maxGuess = {{ guess_max }};
+        const binSize = 5;
+        const binCount = Math.ceil((maxGuess + 1) / binSize);
+        const bins = new Array(binCount).fill(0);
+        values.forEach(v => {
+            const idx = Math.min(binCount - 1, Math.floor(v / binSize));
+            bins[idx] += 1;
+        });
+        const labels = bins.map((_, idx) => {
+            const start = idx * binSize;
+            const end = Math.min(maxGuess, start + binSize - 1);
+            return `${start}–${end}`;
+        });
+
+        const ctx = document.getElementById('guessHistogram').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Numero di partecipanti',
+                    data: bins,
+                    backgroundColor: 'rgba(59, 130, 246, 0.65)',
+                    borderColor: 'rgba(30, 64, 175, 0.9)',
+                    borderWidth: 1,
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Intervallo di guess' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: '# partecipanti' },
+                        ticks: { precision: 0 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    })();
+</script>
+{% endif %}

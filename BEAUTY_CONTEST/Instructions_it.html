@@ -1,0 +1,26 @@
+<h1>Istruzioni</h1>
+<div class="card">
+
+<h2>Il tuo compito</h2>
+    <p>Dovrai scegliere un numero tra 0 e {{ C.GUESS_MAX }}.</p>
+
+    <p><i>
+        0, 1, 2, 3, ..., {{ C.GUESS_MAX }} </i>
+</p>
+
+    <h2>Come vincere <span class="iconify" data-icon="bi:emoji-smile" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
+</h2>
+        <p>Il vincitore/vincitrice nel gioco sarà il/la partecipante che sceglierà il numero più vicino a {{ C.MULTIPLIER_LABEL }} della media dei numeri riportati da tutti i partecipanti.
+    </p>
+    <p>Nel dettaglio:</p>
+
+  <ul>
+    <li>Raccoglierò tutti i numeri riportati dai partecipanti</li>
+    <li>Calcolerò il valore medio (<i>M</i>)</li>
+    <li>Moltiplicherò il valore medio <i>M</i> per {{ C.MULTIPLIER_LABEL }} (<i>W = M * {{ C.MULTIPLIER_LABEL }}</i>)</li>
+    <li>Il vincitore sarà chi ha riportato il numero più vicino a W</li>
+  </ul>
+
+</div>
+
+<br>

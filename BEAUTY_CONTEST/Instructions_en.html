@@ -1,0 +1,26 @@
+<h1>Instructions</h1>
+<div class="card">
+
+<h2>Your task</h2>
+    <p>You must choose a number between 0 and {{ C.GUESS_MAX }}.</p>
+
+    <p><i>
+        0, 1, 2, 3, ..., {{ C.GUESS_MAX }} </i>
+</p>
+
+    <h2>How to win <span class="iconify" data-icon="bi:emoji-smile" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
+</h2>
+        <p>The winner in this game will be the participant who chooses the number closest to {{ C.MULTIPLIER_LABEL }} of the average of all numbers submitted by all participants.
+    </p>
+    <p>Specifically:</p>
+
+  <ul>
+    <li>I will collect all numbers submitted by participants</li>
+    <li>I will compute the average value (<i>M</i>)</li>
+    <li>I will multiply the average value <i>M</i> by {{ C.MULTIPLIER_LABEL }} (<i>W = M * {{ C.MULTIPLIER_LABEL }}</i>)</li>
+    <li>The winner will be the participant whose number is closest to W</li>
+  </ul>
+
+</div>
+
+<br>
