@@ -1,0 +1,414 @@
+{% load otree %}
+
+<h2>{{ t.admin_report_title }}</h2>
+
+<p>
+    {{ t.session_participants }}: <strong>{{ total_players }}</strong> |
+    {{ t.recorded_choices }}: <strong>{{ recorded_choices }}</strong> / {{ expected_choices }}
+    {% if overall_mean != None %}
+        | {{ t.overall_mean_contribution }}: <strong>{{ overall_mean }}</strong>
+    {% endif %}
+</p>
+
+{% if recorded_choices %}
+<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+    <h3 style="margin-top: 0;">{{ t.overall_contributions }}</h3>
+
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+        <div style="min-width: 180px;">
+            <div style="color: #57606a; font-size: .9rem;">{{ t.overall_mean }}</div>
+            <div style="font-size: 2rem; font-weight: 700;">{{ overall_mean }}</div>
+        </div>
+        <div style="min-width: 180px;">
+            <div style="color: #57606a; font-size: .9rem;">{{ t.total_contributed }}</div>
+            <div style="font-size: 2rem; font-weight: 700;">{{ overall_total }}</div>
+        </div>
+        <div style="min-width: 180px;">
+            <div style="color: #57606a; font-size: .9rem;">{{ t.individual_endowment }}</div>
+            <div style="font-size: 2rem; font-weight: 700;">{{ endowment }}</div>
+        </div>
+    </div>
+
+    {% if ai_commentary_html %}
+    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem; background: #f6f8fa;">
+        <h3 style="margin-top: 0;">{{ t.ai_commentary_title }}</h3>
+        <div style="line-height: 1.5;">
+            {{ ai_commentary_html|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="max-width: 920px; margin-bottom: 1.5rem;">
+        <canvas id="overallContributionChart" width="920" height="420" style="width: 100%;"></canvas>
+    </div>
+
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th>{{ t.round }}</th>
+                <th>{{ t.choices }}</th>
+                <th>{{ t.mean }}</th>
+                <th>{{ t.total }}</th>
+                <th>{{ t.min }}</th>
+                <th>{{ t.max }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in round_rows %}
+            <tr>
+                <td>{{ row.round }}</td>
+                <td>{{ row.n }}</td>
+                <td>
+                    {% if row.mean != None %}
+                        {{ row.mean }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.total != None %}
+                        {{ row.total }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.min_value != None %}
+                        {{ row.min_value }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.max_value != None %}
+                        {{ row.max_value }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+    <h3 style="margin-top: 0;">{{ t.group_mean_contributions }}</h3>
+
+    <div style="max-width: 920px; margin-bottom: 1.5rem;">
+        <canvas id="groupContributionChart" width="920" height="420" style="width: 100%;"></canvas>
+    </div>
+
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th>{{ t.group }}</th>
+                <th>{{ t.choices }}</th>
+                <th>{{ t.overall_mean_label }}</th>
+                <th>{{ t.total }}</th>
+                {% for label in round_labels %}
+                    <th>{{ t.round }} {{ label }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in group_rows %}
+            <tr>
+                <td>{{ row.group }}</td>
+                <td>{{ row.n }}</td>
+                <td>
+                    {% if row.mean != None %}
+                        {{ row.mean }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.total != None %}
+                        {{ row.total }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                {% for round_row in row.rounds %}
+                    <td>
+                        {% if round_row.mean != None %}
+                            {{ round_row.mean }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if earnings_rows %}
+<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+    <h3 style="margin-top: 0;">{{ t.earnings_ranking }}</h3>
+
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th>{{ t.rank }}</th>
+                <th>{{ t.participant }}</th>
+                <th>{{ t.group }}</th>
+                <th>{{ t.completed_rounds }}</th>
+                <th>{{ t.total_earnings }}</th>
+                <th>{{ t.round_average }}</th>
+                <th>{{ t.average_contribution }}</th>
+                {% for label in round_labels %}
+                    <th>{{ t.contribution_round }}{{ label }}</th>
+                {% endfor %}
+                {% for label in round_labels %}
+                    <th>{{ t.earning_round }}{{ label }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in earnings_rows %}
+            <tr>
+                <td>{{ row.rank }}</td>
+                <td>{{ row.participant }}</td>
+                <td>{{ row.group }}</td>
+                <td>{{ row.completed_rounds }}</td>
+                <td><strong>{{ row.total }}</strong></td>
+                <td>
+                    {% if row.average != None %}
+                        {{ row.average }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.average_contribution != None %}
+                        {{ row.average_contribution }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                {% for contribution in row.contributions_by_round %}
+                    <td>
+                        {% if contribution != None %}
+                            {{ contribution }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                {% endfor %}
+                {% for earning in row.earnings_by_round %}
+                    <td>
+                        {% if earning != None %}
+                            {{ earning }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<details>
+    <summary>{{ t.individual_choices }}</summary>
+    <table class="table table-bordered table-sm" style="margin-top: 1rem;">
+        <thead>
+            <tr>
+                <th>{{ t.round }}</th>
+                <th>{{ t.group }}</th>
+                <th>{{ t.participant }}</th>
+                <th>{{ t.contribution }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in participant_rows %}
+            <tr>
+                <td>{{ row.round }}</td>
+                <td>{{ row.group }}</td>
+                <td>{{ row.participant }}</td>
+                <td>{{ row.choice }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</details>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function() {
+        const roundRows = {{ round_rows|json }};
+        const groupRows = {{ group_rows|json }};
+        const endowment = {{ endowment|json }};
+        const chartText = {{ chart_text|json }};
+        const lineColors = [
+            'rgb(37, 99, 235)',
+            'rgb(22, 163, 74)',
+            'rgb(217, 119, 6)',
+            'rgb(220, 38, 38)',
+            'rgb(124, 58, 237)',
+            'rgb(8, 145, 178)',
+            'rgb(219, 39, 119)',
+            'rgb(75, 85, 99)',
+        ];
+        const subjectColors = [
+            'rgb(37, 99, 235)',
+            'rgb(220, 38, 38)',
+            'rgb(22, 163, 74)',
+            'rgb(217, 119, 6)',
+            'rgb(124, 58, 237)',
+            'rgb(8, 145, 178)',
+            'rgb(219, 39, 119)',
+            'rgb(101, 163, 13)',
+            'rgb(234, 88, 12)',
+            'rgb(75, 85, 99)',
+        ];
+        const transparentColor = (color, alpha) =>
+            color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
+
+        const overallCanvas = document.getElementById('overallContributionChart');
+        if (overallCanvas) {
+            new Chart(overallCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: roundRows.map((row) => `${chartText.round} ${row.round}`),
+                    datasets: [{
+                        label: chartText.chart_average_contribution,
+                        data: roundRows.map((row) => row.mean),
+                        borderColor: 'rgb(37, 99, 235)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.18)',
+                        borderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: 'rgb(37, 99, 235)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        tension: 0.25,
+                        spanGaps: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.2,
+                    scales: {
+                        x: {
+                            title: { display: true, text: chartText.round },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: endowment,
+                            title: { display: true, text: chartText.chart_average_contribution },
+                        },
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const row = roundRows[context.dataIndex];
+                                    return `${chartText.mean}: ${row.mean} (n=${row.n})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const groupCanvas = document.getElementById('groupContributionChart');
+        if (groupCanvas) {
+            const labels = roundRows.map((row) => `${chartText.round} ${row.round}`);
+            const groupDatasets = [];
+            let subjectColorIndex = 0;
+            groupRows.forEach((row, index) => {
+                const color = lineColors[index % lineColors.length];
+                row.individuals.forEach((individual) => {
+                    const subjectColor = subjectColors[subjectColorIndex % subjectColors.length];
+                    subjectColorIndex += 1;
+                    groupDatasets.push({
+                        label: `${chartText.group} ${row.group} - ${individual.participant}`,
+                        data: individual.choices,
+                        borderColor: transparentColor(subjectColor, 0.55),
+                        backgroundColor: transparentColor(subjectColor, 0.12),
+                        borderWidth: 1,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: subjectColor,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1,
+                        tension: 0.25,
+                        spanGaps: false,
+                        isIndividual: true,
+                    });
+                });
+
+                const roundMeanByNumber = Object.fromEntries(
+                    row.rounds.map((roundRow) => [roundRow.round, roundRow.mean])
+                );
+                groupDatasets.push({
+                    label: `${chartText.group} ${row.group} - ${chartText.chart_group_average_suffix}`,
+                    data: roundRows.map((roundRow) => roundMeanByNumber[roundRow.round] ?? null),
+                    borderColor: color,
+                    backgroundColor: transparentColor(color, 0.18),
+                    borderWidth: 4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.25,
+                    spanGaps: false,
+                    isAverage: true,
+                });
+            });
+
+            new Chart(groupCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: groupDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.2,
+                    scales: {
+                        x: {
+                            title: { display: true, text: chartText.round },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: endowment,
+                            title: { display: true, text: chartText.contribution },
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                filter: function(item, chart) {
+                                    return !chart.datasets[item.datasetIndex].isIndividual;
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    })();
+</script>
+{% else %}
+<p>{{ t.no_contributions }}</p>
+{% endif %}

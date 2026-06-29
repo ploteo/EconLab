@@ -1,0 +1,39 @@
+{{ extends "global/Page.html" }}
+{{ load staticfiles otree }}
+
+{{ block title }}
+<h1>{{ t.final_results_title }}</h1>
+{{ endblock }}
+
+{{ block content }}
+
+<div class="container box">
+<p>{{ t.final_total_prefix }} {{ Constants.num_rounds }} {{ t.final_total_mid }} {{ payoff_final }}!</p>
+<br>
+<div class="container" style="font-size:18pt">
+  <div class="row">
+    <div class="col">
+      &NonBreakingSpace;
+    </div>
+    <div class="col">
+      <button name="btn_submit" value="True" class="btn btn-outline-primary btn-large">
+        <span style="font-size:14pt">{{ t.finish }}</span>
+      </button>
+    </div>
+    <div class="col">
+      &NonBreakingSpace;
+    </div>
+  </div>
+</div>
+</div>
+
+{{ endblock }}
+
+{{ block styles }}
+
+<link href="{{ static 'styles.css' }}" rel="stylesheet"> -
+
+{{ endblock }}
+
+
+

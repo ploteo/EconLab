@@ -1,0 +1,50 @@
+{{ block title }}
+<h1>{{ t.instructions_title }}</h1>
+{{ endblock }}
+
+{{ block content }}
+
+<div class="box">
+
+  <h2>{{ t.interaction_heading }}</h2>
+
+  <p>{{ t.instructions_group_prefix }} {{ Constants.players_per_group }} {{ t.participants }}.</p>
+  <p>{{ t.groups_random }}</p>
+  <p>{{ t.endowment_prefix }} {{ Constants.endowment }} {{ t.endowment_suffix }}</p>
+  <p>{{ t.contribution_decision }}</p>
+  <p>{{ t.contribution_range_prefix }} {{ Constants.endowment }}.</p>
+
+  <section class="instructions-earnings">
+    <h2>{{ t.earnings_heading }}</h2>
+    <figure class="pgg-schema">
+      <img src="{{ static 'PGG.svg' }}" alt="{{ t.pgg_schema_alt }}" />
+    </figure>
+    <p>{{ t.earnings_intro }}</p>
+    <ul>
+      <li>
+        <p>{{ t.contributions_added_prefix }} {{ Constants.players_per_group }} {{ t.contributions_added_suffix }}</p>
+      </li>
+      <li>
+        <p>{{ t.multiplier_prefix }} {{ Constants.multiplier }}{{ t.multiplier_suffix }}</p>
+      </li>
+      <li>
+        <p>{{ t.split_prefix }} {{ Constants.players_per_group }} {{ t.split_suffix }}</p>
+      </li>
+    </ul>
+    <p>{{ t.payoff_rule }}</p>
+  </section>
+
+  <p>{{ t.repetitions_prefix }} {{ Constants.num_rounds }} {{ t.repetitions_mid }} {{ other_players }} {{ t.repetitions_suffix }}</p>
+  <p>{{ t.total_payoff_rule }}</p>
+<!-- -->
+</div>
+
+{{next_button}}
+
+
+{{ endblock }}
+{{ block styles}}
+
+<link href="{{static 'styles.css' }}" rel="stylesheet">
+
+{{ endblock }}

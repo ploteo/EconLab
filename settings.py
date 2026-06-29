@@ -1,16 +1,32 @@
 from os import environ
 
 SESSION_CONFIGS = [
+
     dict(
-        name='BeautyContest_IT',
+        name='beauty_contest_ita',
+         display_name = 'Beauty Contest (ITA)',
         app_sequence=['BEAUTY_CONTEST'],
         num_demo_participants=6,
-        language='it',
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_beauty_model='gpt-5.4-mini',
+        language='it', #'it' for italian, 'en' for english
     ),
     dict(
-        name='BeautyContest_EN',
-        app_sequence=['BEAUTY_CONTEST'],
-        num_demo_participants=6,
+        name='public_goods_ita',
+        display_name='Public Goods Game (ITA)',
+        app_sequence=['PGG'],
+        num_demo_participants=3,
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_pgg_model='gpt-5.4-mini', #gpt-5.5, 'gpt-5.4'
+        language='it', #'it' for italian, 'en' for english
+    ),
+    dict(
+        name='public_goods_eng',
+        display_name='Public Goods Game (ENG)',
+        app_sequence=['PGG'],
+        num_demo_participants=3,
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_pgg_model='gpt-5.4-mini', #gpt-5.5, 'gpt-5.4'
         language='en',
     ),
 ]
@@ -38,5 +54,9 @@ USE_POINTS = True
 ADMIN_USERNAME = 'admin'
 # for security, best to set admin password in an environment variable
 ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
+SECRET_KEY = environ.get(
+    'OTREE_SECRET_KEY',
+    'otree-dev-secret-key-change-me-for-production',
+)
 
 DEMO_PAGE_INTRO_HTML = """ """

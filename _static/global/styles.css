@@ -23,20 +23,6 @@
     --border: #e5e7eb;
     --radius: 10px;
     --shadow: 0 2px 8px rgba(0,0,0,0.04);
-    --otree-card-bg: #ffffff;
-    --otree-card-border: rgba(15, 23, 42, 0.10);
-    --otree-card-shadow: 0 14px 38px rgba(2, 6, 23, 0.10), 0 6px 14px rgba(2, 6, 23, 0.08);
-    --otree-card-radius: 16px;
-    --otree-card-pad-y: 1.25rem;
-    --otree-card-pad-x: 1.5rem;
-}
-
-.otree-card {
-    background: var(--otree-card-bg);
-    border: 1px solid var(--otree-card-border);
-    border-radius: var(--otree-card-radius);
-    box-shadow: var(--otree-card-shadow);
-    padding: var(--otree-card-pad-y) var(--otree-card-pad-x);
 }
 
 * {
@@ -405,22 +391,10 @@ tr:nth-child(even) {
     transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.otree-btn-next {
-  background: transparent;
-  color: var(--accent);
-  border: 2px solid var(--accent);
-  padding: 10px 18px;
-  font-size: 15px;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  text-decoration: none;
-}
-
 .otree-btn-next:hover {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
 }
 
 .form-control {

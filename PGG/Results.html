@@ -1,0 +1,135 @@
+{{ extends "global/Page.html" }}
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.results_title }} ({{ t.round }} {{ round_number }} {{ t.of }} {{ Constants.num_rounds }})
+{{ endblock }}
+
+{{ block content }}
+
+<div class="container border" style="font-size:12pt">
+    <h3>{{ t.this_round }}</h3>
+    <div class="row">
+        <div class="col-sm-5">
+            <table class="table-condensed" style="width:500px; margin-top:20px;">
+                <tr>
+                    <td>{{ t.you_contributed }}</td>
+                    <td>{{ player.choice }}</td>
+                </tr>
+                <tr>
+                    <td>{{ t.others_contributed }}</td>
+                    <td></td>
+                </tr>
+                {{ for p in player.get_others_in_group }}
+                <tr>
+                    <td></td>
+                    <td>{{ p.choice }}</td>
+                </tr>
+                {{ endfor }}
+                <tr>
+                    <td>{{ t.total_contribution }}</td>
+                    <td>{{ group.total_choices }}</td>
+                </tr>
+                <tr>
+                    <td>{{ t.total_project_earnings }}</td>
+                    <td>{{ group.total_earnings }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <hr />
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{ t.your_project_earnings }}</td>
+                    <td>{{ group.individual_share }}</td>
+                </tr>
+                <tr>
+                    <td>{{ t.you_kept }}</td>
+                    <td>{{kept}} </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <hr />
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{ t.total_earned }}</td>
+                    <td><span style="font-weight:bold">{{ player.payoff }}</span></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+<br>
+<!-- STORIA -->
+
+<div class="container border" style="font-size:12pt">
+    <h3>{{ t.history }}</h3>
+    <!-- <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Round</th>
+                <th scope="col">Il tuo contributo</th>
+                <th scope="col">I tuoi guadagni dal progetto</th>
+                <th scope="col">I tuoi guadagni totali</th>
+            </tr>
+        </thead>
+
+        {{ for j in table_hist }}
+        <tr>
+            {{ for i in j }}
+            <td>{{i}} </td>
+            {{ endfor }}
+        </tr>
+        {{ endfor }}
+
+    </table> -->
+
+
+    <!-- GRAFICO -->
+    <div class="row">
+    <div class="col-sm-6">
+        <div id="container2" style="width:100%; height:300px;"> </div>
+    </div>
+        <div class="col-sm-6">
+            <div id="container1" style="width:100%; height:300px;"> </div>
+        </div>
+</div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div id="container3" style="width:100%; height:300px;"> </div>
+    </div>
+</div>
+</div>
+    <!-- FINE GRAFICO -->
+
+<!-- FINE STORIA -->
+
+{{ next_button }}
+
+
+{{ endblock }}
+
+{{ block scripts }}
+
+<script src="{{ static 'charts/highcharts.js' }}"></script>
+<script src="{{ static 'charts/mygraph_contrib.js' }}"></script>
+<script src="{{ static 'charts/mygraph_individ.js' }}"></script>
+<script src="{{ static 'charts/mygraph_payoffs.js' }}"></script>
+
+<script>
+    jQuery(document).ready(function ($) {
+        // draw_graph_static();
+        draw_graph({{ history_contrib }}, {{ chart_text }});
+    draw_graph2({{ history_individ }}, {{ chart_text }});
+    draw_graph3({{ history_payoff }}, {{ chart_text }});
+    });
+</script>
+
+{{ endblock }}
+
+{{ block styles}}
+
+<link href="{{static 'styles.css' }}" rel="stylesheet">
+
+{{ endblock }}

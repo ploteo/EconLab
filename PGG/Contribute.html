@@ -1,0 +1,34 @@
+{{ extends "global/Page.html" }}
+{{ load staticfiles otree }}
+
+
+
+{{ block title }}
+<h1>{{ t.contribute_title }} ({{ t.round }} {{ round_number }} {{ t.of }} {{ Constants.num_rounds }})<h1>
+    {{ endblock }}
+
+    {{ block content }}
+
+
+    <div class="box">
+
+      {{ formfield player.choice label=t.choice_label }}
+
+
+      <small>{{ t.integer_hint_prefix }} {{ endowment }}</small>
+
+    </div>
+
+
+ {{ next_button }}
+
+
+
+    {{ endblock }}
+
+    {{ block styles}}
+    
+    <link href="{{static 'styles.css' }}" rel="stylesheet">
+    <link href="{{static 'styles.css' }}" rel="stylesheet">
+    
+    {{ endblock }}

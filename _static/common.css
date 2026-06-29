@@ -1,0 +1,51 @@
+input[type=radio] {
+  transform: scale(1.5);
+  margin: 12px -10px 0px -30px;
+}
+
+.choice-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.choice-card {
+  width: 100%;
+  max-width: 960px;
+}
+
+.table-choice {
+  margin: 0 auto;
+}
+
+.table-choice td,
+.table-choice th {
+  vertical-align: middle;
+}
+
+.option-a,
+.option-b {
+  transition: background-color 0.2s ease, font-weight 0.2s ease;
+}
+
+.option-a.selected {
+  background: #e3f1ed;
+  font-weight: 700;
+}
+
+.option-b.selected {
+  background: #f7ebd8;
+  font-weight: 700;
+}
+
+.choice-cell {
+  text-align: center;
+}
+
+.container.box {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  border: 1px solid #ececec;
+  padding: 22px 26px;
+  margin-bottom: 20px;
+}

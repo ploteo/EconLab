@@ -1,25 +1,34 @@
 
 {% load otree %}
 
-<h2>Beauty Contest ITA – Admin Report (Round {{ round_number }})</h2>
+<h2>{{ t.admin_report_title }} ({{ t.admin_round }} {{ round_number }})</h2>
 
-<h3>Distribuzione dei guess</h3>
+<h3>{{ t.guess_distribution }}</h3>
 {% if guess_values %}
 <div style="max-width: 900px;">
     <canvas id="guessHistogram" width="900" height="360" style="width: 100%;"></canvas>
 </div>
 {% else %}
-<p>Nessun guess registrato per costruire l'istogramma.</p>
+<p>{{ t.no_guesses_histogram }}</p>
 {% endif %}
 
-<h3>Statistiche di gruppo</h3>
+{% if ai_commentary_html %}
+<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin: 1.25rem 0; background: #f6f8fa;">
+    <h3 style="margin-top: 0;">{{ t.ai_commentary_title }}</h3>
+    <div style="line-height: 1.5;">
+        {{ ai_commentary_html|safe }}
+    </div>
+</div>
+{% endif %}
+
+<h3>{{ t.group_statistics }}</h3>
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th>Group ID</th>
-            <th>{{ multiplier_label }} media</th>
-            <th>Best guess</th>
-            <th># vincitori</th>
+            <th>{{ t.group_id }}</th>
+            <th>{{ multiplier_label }} {{ t.average }}</th>
+            <th>{{ t.best_guess }}</th>
+            <th>{{ t.winners_count }}</th>
         </tr>
     </thead>
     <tbody>
@@ -42,15 +51,15 @@
 
 
 {% if rows %}
-<h3>Dettagli partecipanti</h3>
+<h3>{{ t.participant_details }}</h3>
 <table class="table table-striped">
     <thead>
         <tr>
             <th>#</th>
-            <th>Partecipante</th>
-            <th>Guess</th>
-            <th>Vincitore?</th>
-            <th>Payoff</th>
+            <th>{{ t.participant }}</th>
+            <th>{{ t.guess }}</th>
+            <th>{{ t.winner }}</th>
+            <th>{{ t.payoff }}</th>
         </tr>
     </thead>
     <tbody>
@@ -59,14 +68,14 @@
             <td>{{ forloop.counter }}</td>
             <td>{{ row.participant }}</td>
             <td>{{ row.guess_display }}</td>
-            <td>{% if row.is_winner %}Sì{% else %}No{% endif %}</td>
+            <td>{% if row.is_winner %}{{ t.yes }}{% else %}{{ t.no }}{% endif %}</td>
             <td>{{ row.payoff }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-<p>Nessun dato disponibile.</p>
+<p>{{ t.no_data }}</p>
 {% endif %}
 
 {% if guess_values %}
@@ -74,6 +83,7 @@
 <script>
     (function() {
         const values = {{ guess_values|json }};
+        const text = {{ t|json }};
         if (!values.length) return;
 
         const maxGuess = {{ guess_max }};
@@ -96,7 +106,7 @@
             data: {
                 labels,
                 datasets: [{
-                    label: 'Numero di partecipanti',
+                    label: text.histogram_participants,
                     data: bins,
                     backgroundColor: 'rgba(59, 130, 246, 0.65)',
                     borderColor: 'rgba(30, 64, 175, 0.9)',
@@ -106,11 +116,11 @@
             options: {
                 scales: {
                     x: {
-                        title: { display: true, text: 'Intervallo di guess' }
+                        title: { display: true, text: text.histogram_guess_interval }
                     },
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: '# partecipanti' },
+                        title: { display: true, text: text.histogram_participants_axis },
                         ticks: { precision: 0 }
                     }
                 },
