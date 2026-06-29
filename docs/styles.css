@@ -384,6 +384,12 @@ code {
   text-decoration: none;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
 @media (max-width: 880px) {
   .site-header {
     align-items: flex-start;
