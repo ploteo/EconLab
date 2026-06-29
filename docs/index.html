@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EconLab Classroom</title>
+    <meta
+      name="description"
+      content="EconLab Classroom is a modular oTree toolkit for teaching economics through classroom experiments."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top">EconLab Classroom</a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#workflow">Workflow</a>
+        <a href="#apps">Apps</a>
+        <a href="#feedback">AI feedback</a>
+        <a href="#run">Run</a>
+        <a href="assets/DRAFT.pdf">Paper</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-content">
+          <p class="eyebrow">Browser-based classroom experiments</p>
+          <h1 id="hero-title">EconLab Classroom</h1>
+          <p class="hero-copy">
+            A modular oTree toolkit for turning lectures and tutorials into
+            empirical exercises where students make decisions, inspect class
+            data, and connect observed behavior to economic theory.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#apps">Explore apps</a>
+            <a class="button secondary" href="assets/DRAFT.pdf">Download paper</a>
+            <a class="button secondary" href="https://github.com/ploteo/EconLab">View repository</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="summary band">
+        <div class="summary-grid">
+          <div>
+            <span class="metric">2</span>
+            <span class="metric-label">implemented apps</span>
+          </div>
+          <div>
+            <span class="metric">3</span>
+            <span class="metric-label">session configs</span>
+          </div>
+          <div>
+            <span class="metric">2</span>
+            <span class="metric-label">languages used</span>
+          </div>
+          <div>
+            <span class="metric">1</span>
+            <span class="metric-label">shared oTree project</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="workflow">
+        <div class="section-inner">
+          <div class="section-heading">
+            <p class="eyebrow">Teaching sequence</p>
+            <h2>From decision to discussion</h2>
+            <p>
+              The project is designed for ordinary teaching settings. Students
+              participate from their own devices, while the instructor uses
+              oTree reports to move from class choices to theory-driven
+              interpretation.
+            </p>
+          </div>
+          <div class="workflow-grid">
+            <article class="workflow-step">
+              <span class="step-number">1</span>
+              <h3>Introduce</h3>
+              <p>Rules, incentives, timing, and expectations are made explicit.</p>
+            </article>
+            <article class="workflow-step">
+              <span class="step-number">2</span>
+              <h3>Participate</h3>
+              <p>Students submit decisions through the web interface.</p>
+            </article>
+            <article class="workflow-step">
+              <span class="step-number">3</span>
+              <h3>Display</h3>
+              <p>Aggregate results are shown as tables, graphs, and reports.</p>
+            </article>
+            <article class="workflow-step">
+              <span class="step-number">4</span>
+              <h3>Interpret</h3>
+              <p>The class compares observed behavior with benchmark predictions.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="band muted" id="apps">
+        <div class="section-inner">
+          <div class="section-heading">
+            <p class="eyebrow">Apps in EconExp</p>
+            <h2>Current experiment modules</h2>
+            <p>
+              The repository currently contains two oTree apps for strategic
+              interaction and cooperation. Both include participant pages,
+              payoff logic, admin reports, and optional instructor-facing
+              AI commentary.
+            </p>
+          </div>
+
+          <div class="app-list">
+            <article class="app-card">
+              <div class="app-content">
+                <p class="app-code">BEAUTY_CONTEST</p>
+                <h3>Beauty Contest</h3>
+                <p>
+                  A one-round guessing game based on Nagel (1995). Participants
+                  choose an integer from 0 to 100; the target is two thirds of
+                  the average guess, and the closest guess wins or splits a
+                  jackpot.
+                </p>
+                <dl class="facts">
+                  <div>
+                    <dt>Concepts</dt>
+                    <dd>Iterated reasoning, equilibrium, beliefs</dd>
+                  </div>
+                  <div>
+                    <dt>Output</dt>
+                    <dd>Guess distribution, average, target, winners</dd>
+                  </div>
+                  <div>
+                    <dt>Session</dt>
+                    <dd><code>beauty_contest_ita</code></dd>
+                  </div>
+                </dl>
+                <a class="text-link" href="https://github.com/ploteo/EconLab/tree/master/BEAUTY_CONTEST">Source folder</a>
+              </div>
+            </article>
+
+            <article class="app-card">
+              <div class="app-content">
+                <p class="app-code">PGG</p>
+                <h3>Public Goods Game</h3>
+                <p>
+                  A repeated public goods environment with groups of three,
+                  three rounds, an endowment of 100 points, and a multiplier of
+                  2. Students choose contributions to a common project and see
+                  how group choices affect payoffs.
+                </p>
+                <dl class="facts">
+                  <div>
+                    <dt>Concepts</dt>
+                    <dd>Cooperation, free riding, group outcomes</dd>
+                  </div>
+                  <div>
+                    <dt>Output</dt>
+                    <dd>Round history, group averages, payoff ranking</dd>
+                  </div>
+                  <div>
+                    <dt>Sessions</dt>
+                    <dd><code>public_goods_ita</code>, <code>public_goods_eng</code></dd>
+                  </div>
+                </dl>
+                <a class="text-link" href="https://github.com/ploteo/EconLab/tree/master/PGG">Source folder</a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="band muted" id="feedback">
+        <div class="section-inner two-column">
+          <div class="section-heading">
+            <p class="eyebrow">Recent development</p>
+            <h2>AI-mediated feedback for debriefing</h2>
+            <p>
+              Selected apps can generate concise instructor-facing commentary
+              from the aggregate data in the oTree admin report. The feature is
+              optional and requires the OpenAI Python package plus an API key.
+            </p>
+          </div>
+          <div class="detail-panel">
+            <h3>How it works</h3>
+            <ul>
+              <li>The app builds a structured payload from choices, payoffs, group statistics, and language settings.</li>
+              <li>The model is asked to produce a short HTML comment for classroom discussion.</li>
+              <li>Prompts require observed aggregate patterns and avoid unsupported claims about individual motives.</li>
+              <li>If the AI service is unavailable, the experiment still runs and the report shows a fallback message.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="run">
+        <div class="section-inner two-column">
+          <div class="section-heading">
+            <p class="eyebrow">Use the project</p>
+            <h2>Run locally or deploy separately</h2>
+            <p>
+              This website is static and can be hosted by GitHub Pages. The
+              oTree experiments themselves require a Python server and are not
+              executed by GitHub Pages.
+            </p>
+          </div>
+          <div class="command-panel">
+            <pre><code>pip install otree
+otree devserver</code></pre>
+            <p>
+              Install <code>openai</code> and set <code>OPENAI_API_KEY</code> if
+              you want AI commentary in the admin reports.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>EconLab Classroom - oTree experiments for teaching economics.</p>
+      <a href="https://github.com/ploteo/EconLab">GitHub repository</a>
+    </footer>
+  </body>
+</html>
