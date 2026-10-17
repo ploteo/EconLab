@@ -1,0 +1,49 @@
+{{ block title }}{{ results_page_title }}{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{{ static 'market.css' }}">
+{{ endblock }}
+
+{{ block content }}
+<main class="market-shell">
+    <header class="results-header">
+        <div>
+            <div class="eyebrow">{{ t.session }} {{ session.code }} · {{ t.round }} {{ player.round_number }}</div>
+            <h1>{{ t.round_complete }}</h1>
+            {{ if is_teacher }}
+            <p>{{ t.closed_admin }}</p>
+            {{ else }}
+            <p>{{ t.market_closed }}</p>
+            {{ endif }}
+        </div>
+        {{ if not is_teacher }}
+        <div class="personal-result">
+            <small>{{ t.your_profit }}</small>
+            <strong>€{{ profit_display }}</strong>
+            <span>
+                {{ if player.has_traded }}
+                    {{ t.traded_at }} €{{ traded_price_display }}
+                {{ else }}
+                    {{ t.no_transaction }}
+                {{ endif }}
+            </span>
+        </div>
+        {{ endif }}
+    </header>
+
+    <div class="next-round-bar">
+        <div>
+            {{ if player.round_number < active_rounds }}
+            <strong>{{ ready_next_text }}</strong>
+            <span>{{ t.reassigned }}</span>
+            {{ else }}
+            <strong>{{ t.market_complete }}</strong>
+            <span>{{ t.continue_finish }}</span>
+            {{ endif }}
+        </div>
+        <button class="primary-button otree-btn-next">
+            {{ if player.round_number < active_rounds }}{{ t.next_round }}{{ else }}{{ t.finish }}{{ endif }}
+        </button>
+    </div>
+</main>
+{{ endblock }}

@@ -1,0 +1,73 @@
+<figure class="pgg-payoff-explainer"
+        data-endowment="{{ endowment_number }}"
+        data-multiplier="{{ Constants.multiplier }}"
+        data-players="{{ Constants.players_per_group }}"
+        data-locale="{{ lang }}"
+        aria-labelledby="pgg-explainer-title">
+  <div class="pgg-explainer-heading">
+    <div>
+      <p class="pgg-kicker">{{ t.simulator_kicker }}</p>
+      <h3 id="pgg-explainer-title">{{ t.simulator_heading }}</h3>
+    </div>
+    <p>{{ t.simulator_intro }}</p>
+  </div>
+
+  <div class="pgg-slider-grid">
+    <label class="pgg-contribution-control pgg-contribution-control--you">
+      <span>{{ t.simulator_you }}</span>
+      <output data-output="0"></output>
+      <input type="range" min="0" max="{{ Constants.endowment }}" value="50" step="1" data-contribution="0" aria-label="{{ t.simulator_you }}" />
+    </label>
+    <label class="pgg-contribution-control">
+      <span>{{ t.simulator_other_one }}</span>
+      <output data-output="1"></output>
+      <input type="range" min="0" max="{{ Constants.endowment }}" value="50" step="1" data-contribution="1" aria-label="{{ t.simulator_other_one }}" />
+    </label>
+    <label class="pgg-contribution-control">
+      <span>{{ t.simulator_other_two }}</span>
+      <output data-output="2"></output>
+      <input type="range" min="0" max="{{ Constants.endowment }}" value="50" step="1" data-contribution="2" aria-label="{{ t.simulator_other_two }}" />
+    </label>
+  </div>
+
+  <div class="pgg-payoff-flow" aria-live="polite">
+    <div class="pgg-project-stage">
+      <div class="pgg-stage-label">{{ t.simulator_total_contributions }}</div>
+      <strong><span data-value="total-contributions"></span> E</strong>
+      <div class="pgg-contribution-bars" aria-hidden="true">
+        <span class="pgg-contribution-bar pgg-contribution-bar--you" data-bar="0"></span>
+        <span class="pgg-contribution-bar" data-bar="1"></span>
+        <span class="pgg-contribution-bar" data-bar="2"></span>
+      </div>
+    </div>
+
+    <div class="pgg-flow-arrow" aria-hidden="true">
+      <span>× {{ Constants.multiplier }}</span>
+    </div>
+
+    <div class="pgg-project-stage pgg-project-stage--return">
+      <div class="pgg-stage-label">{{ t.simulator_after_multiplier }}</div>
+      <strong><span data-value="project-return"></span> E</strong>
+      <small>{{ t.simulator_each_gets }} <span data-value="individual-share"></span> E</small>
+    </div>
+  </div>
+
+  <div class="pgg-your-payoff">
+    <div>
+      <span>{{ t.simulator_you_keep }}</span>
+      <strong><span data-value="amount-kept"></span> E</strong>
+    </div>
+    <span class="pgg-payoff-symbol" aria-hidden="true">+</span>
+    <div>
+      <span>{{ t.simulator_your_share }}</span>
+      <strong><span data-value="individual-share"></span> E</strong>
+    </div>
+    <span class="pgg-payoff-symbol" aria-hidden="true">=</span>
+    <div class="pgg-payoff-total">
+      <span>{{ t.simulator_your_payoff }}</span>
+      <strong><span data-value="your-payoff"></span> E</strong>
+    </div>
+  </div>
+
+  <figcaption>{{ t.simulator_hint }}</figcaption>
+</figure>

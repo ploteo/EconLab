@@ -1,0 +1,22 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.new_task_title }}
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+{{ endblock }}
+
+{{ block content }}
+
+<div class="otree-card risk-card">
+    <h2>{{ t.new_task_title }}</h2>
+    <p>{{ t.new_task_intro }}</p>
+    <p>{{ t.new_task_read_plural }}</p>
+</div>
+
+{{ next_button }}
+
+{{ endblock }}

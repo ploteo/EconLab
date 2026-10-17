@@ -1,0 +1,24 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.investment_title }}
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+{{ endblock }}
+
+{{ block content }}
+<div class="otree-card risk-card">
+    <h2>{{ t.investment_title }}</h2>
+    <p>{{ investment_intro }}</p>
+    <ul>
+        <li>{{ investment_low_rule }}</li>
+        <li>{{ investment_high_rule }}</li>
+    </ul>
+    <p>{{ t.virtual_earnings }}</p>
+    <p>{{ t.continue_to_start }}</p>
+</div>
+{{ next_button }}
+{{ endblock }}

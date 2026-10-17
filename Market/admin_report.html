@@ -1,0 +1,493 @@
+<style>
+.market-report { color: #173b45; max-width: 960px; margin: 0 auto; }
+.market-report-header {
+    align-items: center; display: flex; justify-content: space-between;
+    margin-bottom: 18px;
+}
+.market-report-header h4 { color: #173b45; font-weight: 750; margin: 0; }
+.market-status {
+    background: #e8eff1; border-radius: 999px; color: #46585f; font-size: .75rem;
+    font-weight: 750; padding: 6px 12px; text-transform: uppercase;
+}
+.market-status.active { background: #eaf8ef; border: 1px solid #9fd7b2; color: #17623a; }
+.market-status.finished { background: #fee2e2; color: #dc2626; }
+.report-kpis {
+    display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(130px, 1fr));
+    margin-bottom: 18px;
+}
+.report-kpi {
+    background: linear-gradient(135deg, #effafa 0%, #ffffff 65%);
+    border: 1px solid #dcebed; border-radius: 14px;
+    padding: 12px 14px;
+}
+.report-kpi small {
+    color: #5d6d75; display: block; font-size: .7rem; font-weight: 750;
+    letter-spacing: .06em; text-transform: uppercase;
+}
+.report-kpi strong { color: #173b45; display: block; font-size: 1.35rem; font-weight: 800; margin-top: 5px; }
+.ai-commentary {
+    background: #fbfdfd; border: 1px solid #dce8eb; border-top: 4px solid #006b7c;
+    border-radius: 18px; box-shadow: 0 10px 28px rgba(20, 65, 76, 0.08);
+    margin-bottom: 18px; padding: 18px 20px;
+}
+.ai-commentary h3 { color: #173b45; font-size: 1.08rem; font-weight: 750; margin: 0 0 12px; }
+.ai-commentary-body { color: #334d56; line-height: 1.55; }
+.ai-commentary-body h4 { color: #173b45; font-size: .95rem; font-weight: 750; margin: 14px 0 5px; }
+.ai-commentary-body h4:first-child { margin-top: 0; }
+.ai-commentary-body p, .ai-commentary-body ul,
+.ai-commentary-body ol { margin-bottom: 10px; }
+.report-section {
+    background: #ffffff; border: 1px solid #dce8eb; border-radius: 20px;
+    box-shadow: 0 10px 28px rgba(20, 65, 76, 0.08);
+    margin-bottom: 18px; padding: 18px 20px;
+}
+.report-section h5 { color: #173b45; font-weight: 750; margin-bottom: 4px; }
+.report-section > p { color: #5d6d75; font-size: .86rem; margin-bottom: 14px; }
+.report-chart {
+    background: #fbfdfd; border: 1px solid #dce8eb; border-radius: 14px;
+    margin: 0 auto; max-width: 760px; min-height: 220px; padding: 10px;
+}
+.report-chart svg { display: block; height: auto; width: 100%; }
+.report-chart text { fill: #5d6d75; font: 11px sans-serif; }
+.report-chart .grid { stroke: #dce8eb; stroke-width: 1; }
+.report-chart .demand { fill: none; stroke: #006b7c; stroke-width: 3; }
+.report-chart .supply { fill: none; stroke: #dc2626; stroke-width: 3; }
+.report-chart .price-line { fill: none; stroke: #006b7c; stroke-width: 3; }
+.report-chart .price-point { fill: white; stroke: #006b7c; stroke-width: 3; }
+.report-chart .equilibrium-band { fill: rgba(217, 119, 6, .24); }
+.report-chart .efficient-line { stroke: #8b9ea5; stroke-dasharray: 5 4; }
+.report-chart .equilibrium-price-line {
+    stroke: #d97706; stroke-dasharray: 7 5; stroke-width: 2;
+}
+.report-chart .equilibrium-price-label { fill: #b45309; font-weight: 700; }
+.chart-legend {
+    display: flex; gap: 18px; justify-content: center; margin: 10px 0 14px;
+}
+.chart-legend span { color: #5d6d75; font-size: .78rem; }
+.chart-legend i {
+    display: inline-block; height: 3px; margin-right: 6px;
+    vertical-align: middle; width: 22px;
+}
+.legend-demand { background: #006b7c; }
+.legend-supply { background: #dc2626; }
+.legend-equilibrium { background: #d97706; }
+.report-table-wrap { max-height: 360px; overflow: auto; }
+.market-report table { font-size: .82rem; margin-bottom: 0; width: 100%; }
+.market-report th {
+    background: #edf8f8; color: #173b45; font-weight: 750; position: sticky; top: 0; white-space: nowrap;
+}
+.market-report td, .market-report th {
+    border-bottom: 1px solid #dce8eb; padding: 8px 10px;
+}
+.positive { color: #17623a; font-weight: 750; }
+.negative { color: #dc2626; }
+.muted-cell { color: #5d6d75; }
+.empty-report { color: #5d6d75; padding: 42px 10px; text-align: center; }
+@media (max-width: 900px) {
+    .report-kpis { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+}
+</style>
+
+<div class="market-report">
+    <div class="market-report-header">
+        <h4>{{ report_title }}</h4>
+        <span class="market-status {{ status }}">{{ status_label }}</span>
+    </div>
+
+    <div class="report-kpis">
+        <div class="report-kpi">
+            <small>{{ t.transactions }}</small>
+            <strong>{{ summary.transaction_count }}</strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.average_price }}</small>
+            <strong>
+                {{ if summary.average_price != None }}€{{ summary.average_price_display }}{{ else }}—{{ endif }}
+            </strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.price_range }}</small>
+            <strong>
+                {{ if summary.minimum_price != None }}
+                    €{{ summary.minimum_price_display }}–€{{ summary.maximum_price_display }}
+                {{ else }}—{{ endif }}
+            </strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.equilibrium_quantity }}</small>
+            <strong>{{ summary.theoretical_trades }}</strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.equilibrium_price_range }}</small>
+            <strong>
+                {{ if summary.equilibrium_price_low != None }}
+                    €{{ summary.equilibrium_price_low_display }}–€{{ summary.equilibrium_price_high_display }}
+                {{ else }}—{{ endif }}
+            </strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.actual_gains }}</small>
+            <strong>€{{ summary.total_gains_display }}</strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.maximum_gains }}</small>
+            <strong>€{{ summary.maximum_gains_display }}</strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.allocative_efficiency }}</small>
+            <strong>{{ summary.efficiency_rate }}%</strong>
+        </div>
+        <div class="report-kpi">
+            <small>{{ t.trade_completion }}</small>
+            <strong>{{ summary.completion_rate }}%</strong>
+        </div>
+    </div>
+
+    {{ if ai_commentary_html }}
+    <section class="ai-commentary">
+        <h3>{{ t.ai_commentary_title }}</h3>
+        <div class="ai-commentary-body">
+            {{ ai_commentary_html|safe }}
+        </div>
+    </section>
+    {{ endif }}
+
+    <section class="report-section">
+        <h5>{{ t.theoretical_supply_demand }}</h5>
+        <p>{{ t.theory_description }}</p>
+        <div id="theoryChart-{{ round_number }}" class="report-chart"></div>
+        <div class="chart-legend">
+            <span><i class="legend-demand"></i>{{ t.demand_legend }}</span>
+            <span><i class="legend-supply"></i>{{ t.supply_legend }}</span>
+            <span><i class="legend-equilibrium"></i>{{ t.equilibrium_legend }}</span>
+        </div>
+        {{ if theoretical.rows }}
+        <div class="report-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ t.unit }}</th>
+                        <th>{{ t.buyer }}</th>
+                        <th>{{ t.value }}</th>
+                        <th>{{ t.seller }}</th>
+                        <th>{{ t.cost }}</th>
+                        <th>{{ t.potential_surplus }}</th>
+                        <th>{{ t.efficient_trade }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ for row in theoretical.rows }}
+                    <tr>
+                        <td>{{ row.quantity }}</td>
+                        <td>{{ if row.buyer }}{{ row.buyer.nickname }}{{ else }}—{{ endif }}</td>
+                        <td>{{ if row.buyer }}€{{ row.buyer.value_display }}{{ else }}—{{ endif }}</td>
+                        <td>{{ if row.seller }}{{ row.seller.nickname }}{{ else }}—{{ endif }}</td>
+                        <td>{{ if row.seller }}€{{ row.seller.value_display }}{{ else }}—{{ endif }}</td>
+                        <td>
+                            {{ if row.surplus != None }}€{{ row.surplus_display }}{{ else }}—{{ endif }}
+                        </td>
+                        <td>
+                            {{ if row.efficient }}<span class="positive">{{ t.yes }}</span>{{ else }}{{ t.no }}{{ endif }}
+                        </td>
+                    </tr>
+                    {{ endfor }}
+                </tbody>
+            </table>
+        </div>
+        {{ endif }}
+    </section>
+
+    <section class="report-section">
+        <h5>{{ t.transaction_prices_time }}</h5>
+        <p>{{ t.prices_description }}</p>
+        <div id="priceChart-{{ round_number }}" class="report-chart"></div>
+    </section>
+
+    <section class="report-section">
+        <h5>{{ t.transactions }}</h5>
+        <p>{{ t.transaction_record }}</p>
+        {{ if transactions }}
+        <div class="report-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{{ t.time }}</th>
+                        <th>{{ t.buyer }}</th>
+                        <th>{{ t.buyer_value }}</th>
+                        <th>{{ t.seller }}</th>
+                        <th>{{ t.seller_cost }}</th>
+                        <th>{{ t.price }}</th>
+                        <th>{{ t.surplus }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ for transaction in transactions }}
+                    <tr>
+                        <td>{{ transaction.sequence }}</td>
+                        <td>{{ transaction.elapsed }}s</td>
+                        <td>{{ transaction.buyer }}</td>
+                        <td>€{{ transaction.buyer_value_display }}</td>
+                        <td>{{ transaction.seller }}</td>
+                        <td>€{{ transaction.seller_cost_display }}</td>
+                        <td>€{{ transaction.price_display }}</td>
+                        <td class="positive">€{{ transaction.surplus_display }}</td>
+                    </tr>
+                    {{ endfor }}
+                </tbody>
+            </table>
+        </div>
+        {{ else }}
+        <div class="empty-report">{{ t.no_transactions_round }}</div>
+        {{ endif }}
+    </section>
+
+    <section class="report-section">
+        <h5>{{ t.all_offers }}</h5>
+        <p>{{ t.offers_description }}</p>
+        {{ if offers }}
+        <div class="report-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{{ t.time }}</th>
+                        <th>{{ t.participant }}</th>
+                        <th>{{ t.role }}</th>
+                        <th>{{ t.value_cost }}</th>
+                        <th>{{ t.side }}</th>
+                        <th>{{ t.offer }}</th>
+                        <th>{{ t.status }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ for offer in offers }}
+                    <tr>
+                        <td>{{ offer.sequence }}</td>
+                        <td>{{ offer.elapsed }}s</td>
+                        <td>{{ offer.nickname }}</td>
+                        <td>{{ offer.role_label }}</td>
+                        <td>€{{ offer.private_value_display }}</td>
+                        <td>{{ offer.side_label }}</td>
+                        <td>€{{ offer.price_display }}</td>
+                        <td>{{ offer.status_label }}</td>
+                    </tr>
+                    {{ endfor }}
+                </tbody>
+            </table>
+        </div>
+        {{ else }}
+        <div class="empty-report">{{ t.no_offers }}</div>
+        {{ endif }}
+    </section>
+
+    <section class="report-section">
+        <h5>{{ t.participant_outcomes }}</h5>
+        <p>{{ t.outcomes_description }}</p>
+        <div class="report-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ t.nickname }}</th>
+                        <th>{{ t.role }}</th>
+                        <th>{{ t.value_cost }}</th>
+                        <th>{{ t.traded }}</th>
+                        <th>{{ t.trade_price }}</th>
+                        <th>{{ t.profit }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ for student in students }}
+                    <tr>
+                        <td>{{ student.nickname }}</td>
+                        <td>{{ student.role_label }}</td>
+                        <td>
+                            {{ if student.private_value != None }}€{{ student.private_value_display }}{{ else }}—{{ endif }}
+                        </td>
+                        <td>{{ if student.has_traded }}{{ t.yes }}{{ else }}{{ t.no }}{{ endif }}</td>
+                        <td>
+                            {{ if student.traded_price != None }}€{{ student.traded_price_display }}{{ else }}—{{ endif }}
+                        </td>
+                        <td>€{{ student.profit_display }}</td>
+                    </tr>
+                    {{ endfor }}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script>
+(() => {
+    const data = {{ chart_data|json }};
+    const tr = {{ t|json }};
+    const theoryNode = document.getElementById('theoryChart-{{ round_number }}');
+    const priceNode = document.getElementById('priceChart-{{ round_number }}');
+    const width = 760;
+    const height = 260;
+    const pad = {left: 58, right: 22, top: 20, bottom: 42};
+
+    const empty = (node, message) => {
+        node.innerHTML = `<div class="empty-report">${message}</div>`;
+    };
+
+    function renderTheory() {
+        const series = [...data.demand, ...data.supply];
+        if (!series.length) {
+            empty(theoryNode, tr.theory_chart_empty);
+            return;
+        }
+        const maxQ = Math.max(...series.map(point => point.quantity), 1);
+        const maxPrice = Math.max(...series.map(point => point.price), 1) * 1.12;
+        const x = quantity => pad.left + quantity / maxQ *
+            (width - pad.left - pad.right);
+        const y = price => pad.top + (maxPrice - price) / maxPrice *
+            (height - pad.top - pad.bottom);
+        const stepPath = points => {
+            if (!points.length) return '';
+            let path = `M ${x(0)} ${y(points[0].price)}`;
+            points.forEach((point, index) => {
+                path += ` H ${x(point.quantity)}`;
+                if (points[index + 1]) {
+                    path += ` V ${y(points[index + 1].price)}`;
+                }
+            });
+            return path;
+        };
+        const yTicks = [0, maxPrice / 2, maxPrice];
+        const qTicks = Array.from({length: maxQ + 1}, (_, index) => index);
+        const efficientX = x(data.efficient_trades);
+        const hasEquilibriumRange = data.equilibrium_price_low !== null &&
+            data.equilibrium_price_high !== null;
+        const equilibriumTop = hasEquilibriumRange
+            ? y(data.equilibrium_price_high) : 0;
+        const equilibriumHeight = hasEquilibriumRange
+            ? y(data.equilibrium_price_low) - equilibriumTop : 0;
+        theoryNode.innerHTML = `
+            <svg viewBox="0 0 ${width} ${height}" role="img"
+                 aria-label="${tr.theory_chart_aria}">
+                ${yTicks.map(value => `
+                    <line class="grid" x1="${pad.left}" y1="${y(value)}"
+                          x2="${width-pad.right}" y2="${y(value)}"></line>
+                    <text x="${pad.left-9}" y="${y(value)+4}"
+                          text-anchor="end">€${value.toFixed(2)}</text>
+                `).join('')}
+                ${qTicks.map(value => `
+                    <text x="${x(value)}" y="${height-17}"
+                          text-anchor="middle">${value}</text>
+                `).join('')}
+                ${hasEquilibriumRange ? `
+                    <rect class="equilibrium-band" x="${efficientX-8}"
+                          y="${equilibriumTop}" width="16"
+                          height="${equilibriumHeight}"></rect>
+                ` : ''}
+                ${data.efficient_trades ? `
+                    <line class="efficient-line" x1="${efficientX}" y1="${pad.top}"
+                          x2="${efficientX}" y2="${height-pad.bottom}"></line>
+                    <text x="${efficientX+6}" y="${pad.top+12}">
+                        ${tr.efficient_q} = ${data.efficient_trades}
+                    </text>
+                    ${hasEquilibriumRange ? `
+                        <text x="${efficientX+6}" y="${pad.top+28}">
+                            P = €${data.equilibrium_price_low.toFixed(2)}–
+                            €${data.equilibrium_price_high.toFixed(2)}
+                        </text>
+                    ` : ''}
+                ` : ''}
+                <path class="demand" d="${stepPath(data.demand)}"></path>
+                <path class="supply" d="${stepPath(data.supply)}"></path>
+                <text x="${width/2}" y="${height-2}" text-anchor="middle">${tr.quantity}</text>
+                <text x="14" y="${height/2}" text-anchor="middle"
+                      transform="rotate(-90 14 ${height/2})">${tr.value_cost_axis}</text>
+            </svg>`;
+    }
+
+    function renderPrices() {
+        const points = data.transaction_prices;
+        const hasEquilibriumRange = data.equilibrium_price_low !== null &&
+            data.equilibrium_price_high !== null;
+        if (!points.length && !hasEquilibriumRange) {
+            empty(priceNode, tr.no_prices_chart);
+            return;
+        }
+        const maxTime = Math.max(
+            ...points.map(point => point.elapsed),
+            data.round_duration || 0,
+            1
+        );
+        const equilibriumLines = hasEquilibriumRange
+            ? data.equilibrium_price_low === data.equilibrium_price_high
+                ? [{
+                    price: data.equilibrium_price_low,
+                    label: tr.equilibrium_price
+                }]
+                : [
+                    {
+                        price: data.equilibrium_price_low,
+                        label: tr.lower_equilibrium
+                    },
+                    {
+                        price: data.equilibrium_price_high,
+                        label: tr.upper_equilibrium
+                    }
+                ]
+            : [];
+        const prices = [
+            ...points.map(point => point.price),
+            ...equilibriumLines.map(line => line.price)
+        ];
+        const rawMin = Math.min(...prices);
+        const rawMax = Math.max(...prices);
+        const margin = Math.max((rawMax - rawMin) * .2, 1);
+        const minPrice = Math.max(0, rawMin - margin);
+        const maxPrice = rawMax + margin;
+        const x = elapsed => pad.left + elapsed / maxTime *
+            (width - pad.left - pad.right);
+        const y = price => pad.top + (maxPrice - price) / (maxPrice - minPrice) *
+            (height - pad.top - pad.bottom);
+        const path = points.map((point, index) =>
+            `${index ? 'L' : 'M'} ${x(point.elapsed)} ${y(point.price)}`
+        ).join(' ');
+        const yTicks = [minPrice, (minPrice + maxPrice) / 2, maxPrice];
+        const xTicks = [0, maxTime / 2, maxTime];
+        priceNode.innerHTML = `
+            <svg viewBox="0 0 ${width} ${height}" role="img"
+                 aria-label="${tr.prices_chart_aria}">
+                ${yTicks.map(value => `
+                    <line class="grid" x1="${pad.left}" y1="${y(value)}"
+                          x2="${width-pad.right}" y2="${y(value)}"></line>
+                    <text x="${pad.left-9}" y="${y(value)+4}"
+                          text-anchor="end">€${value.toFixed(2)}</text>
+                `).join('')}
+                ${xTicks.map(value => `
+                    <text x="${x(value)}" y="${height-17}"
+                          text-anchor="middle">${value.toFixed(0)}s</text>
+                `).join('')}
+                ${equilibriumLines.map(line => `
+                    <line class="equilibrium-price-line"
+                          x1="${pad.left}" y1="${y(line.price)}"
+                          x2="${width-pad.right}" y2="${y(line.price)}"></line>
+                    <text class="equilibrium-price-label"
+                          x="${width-pad.right-4}"
+                          y="${Math.max(pad.top+12, y(line.price)-5)}"
+                          text-anchor="end">
+                        ${line.label}: €${line.price.toFixed(2)}
+                    </text>
+                `).join('')}
+                <path class="price-line" d="${path}"></path>
+                ${points.map(point => `
+                    <circle class="price-point" cx="${x(point.elapsed)}"
+                            cy="${y(point.price)}" r="5">
+                        <title>€${point.price.toFixed(2)} ${tr.at} ${point.elapsed.toFixed(1)}s</title>
+                    </circle>
+                `).join('')}
+                <text x="${width/2}" y="${height-2}" text-anchor="middle">${tr.time_axis}</text>
+                <text x="14" y="${height/2}" text-anchor="middle"
+                      transform="rotate(-90 14 ${height/2})">${tr.price_axis}</text>
+            </svg>`;
+    }
+
+    renderTheory();
+    renderPrices();
+})();
+</script>

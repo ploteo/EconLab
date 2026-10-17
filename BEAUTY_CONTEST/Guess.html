@@ -1,127 +1,85 @@
+{{ load staticfiles otree }}
+
 {{ block title }}
-<h1>{{ t.guess_title }}</h1>
+    <h1>{{ guess_title }}</h1>
 {{ endblock }}
 
 {{ block content }}
-<input type="hidden" name="guess" id="guess">
+<main class="guess-page">
+    <input type="hidden" name="guess" id="guess">
 
-<div class="card">
-  <p>{{ t.guess_intro_1 }}</p>
-  <p>{{ t.guess_intro_2 }}</p>
+    <section class="result-summary guess-hero-card" aria-label="{{ guess_title }}">
 
-  <p>{{ t.guess_intro_3 }}</p>
-  <br>
-  <div class="row">
-    <div class="w-100">
-      <input type="number"
-             min="0"
-             max="{{ C.GUESS_MAX }}"
-             step="1"
-             id="guess-input"
-             class="form-control"
-             inputmode="numeric"
-             placeholder="0-{{ C.GUESS_MAX }}"
-             aria-label="{{ t.guess_aria }}">
-    </div>
-  </div>
+        <div class="guess-prompt-wrap">
+            <p class="guess-prompt">{{ t.guess_intro_1 }}</p>
+            <p class="guess-prompt-hint">{{ t.guess_intro_2 }}</p>
+        </div>
 
-  <br>
+        <div class="guess-input-container">
+            <label class="visually-hidden" for="guess-input">{{ t.guess_aria }}</label>
+            <input type="number"
+                   min="0"
+                   max="{{ C.GUESS_MAX }}"
+                   step="1"
+                   id="guess-input"
+                   class="guess-input"
+                   inputmode="numeric"
+                   placeholder="0 – {{ C.GUESS_MAX }}"
+                   aria-label="{{ t.guess_aria }}"
+                   autofocus>
+        </div>
 
-  <div id="panel">
-    <p>{{ t.chosen_value }}
-      <span class="badge rounded-pill my_badge" id="value_slider"></span></p>
-  </div>
+        <div id="panel" class="result-metric result-metric--yours guess-preview-metric" aria-live="polite">
+            <span class="result-metric-label">{{ t.chosen_value }}</span>
+            <strong id="value_slider"></strong>
+        </div>
 
+        <div class="guess-confirm-row result-actions">
+            <button type="button" class="btn result-continue-button" id="bottoneconferma_disabled" disabled="true" aria-disabled="true">
+                {{ t.confirm }} <span aria-hidden="true">→</span>
+            </button>
+            <button type="submit" class="btn result-continue-button" id="bottoneconferma">
+                {{ t.confirm }} <span aria-hidden="true">→</span>
+            </button>
+        </div>
+    </section>
 
-  <!-- Keep one visible submit button and one disabled placeholder for invalid input. -->
-  <div class="row">
-    <div class="col-md-10" style="font-size: 150%;font-weight: bold;">&NonBreakingSpace;
-    </div>
-    <div class="col-md-2">
-      <button class="btn btn-primary btn-large" id="bottoneconferma_disabled" disabled="true"> {{ t.confirm }} </button>
-      <button class="btn btn-primary btn-large" id="bottoneconferma"> {{ t.confirm }} </button>
-    </div>
-  </div>
-
-</div>
-
-<br>
-<button type="button" onclick="myFunction()" class="btn btn-info" id="instructions-button">
-  {{ t.reread_instructions }}
-</button><br>
-<div id="myDIV" class="container box" style="font-size: 90%; display: none">
-  {{ include instructions_template }}
-</div>
-
+    <section class="guess-instructions">
+        <button type="button" onclick="myFunction()" class="instructions-toggle-btn" id="instructions-button" aria-expanded="false" aria-controls="myDIV">
+            <span class="toggle-btn-left">
+                <span class="toggle-btn-icon" aria-hidden="true">📖</span>
+                <span>{{ t.reread_instructions }}</span>
+            </span>
+            <span class="toggle-chevron" aria-hidden="true">▼</span>
+        </button>
+        <div id="myDIV" class="result-card instructions-drawer" style="display: none">
+            {{ include instructions_template }}
+        </div>
+    </section>
+</main>
 {{ endblock }}
 
-
 {{ block styles }}
-
-
-
-<link rel="stylesheet" href="{% static 'global/styles.css' %}">
-
-<style>
-  input[type=number] {
-    width: 100%;
-    font-size: 1.1rem;
-    padding: 0.6rem 0.75rem;
-  }
-
-  #value_slider.my_badge {
-    background-color: #3c7570 !important;
-    color: #fff !important;
-    font-size: 100%;
-  }
-
-  #bottoneconferma,
-  #bottoneconferma_disabled,
-  #instructions-button {
-    background-color: #3c7570 !important;
-    border-color: #3c7570 !important;
-    color: #fff !important;
-  }
-
-  #bottoneconferma:hover,
-  #bottoneconferma:focus,
-  #instructions-button:hover,
-  #instructions-button:focus {
-    background-color: #315f5b !important;
-    border-color: #315f5b !important;
-    color: #fff !important;
-  }
-
-  #bottoneconferma_disabled {
-    opacity: 0.55;
-  }
-</style>
-
+<link rel="stylesheet" href="{% static 'beauty_contest.css' %}">
 {{ endblock }}
 
 {{ block scripts }}
-
 <script>
   function myFunction() {
-    // Show or hide the instruction text when the participant asks to reread it.
     var x = document.getElementById("myDIV");
-    if (x.style.display === "block") {
-      x.style.display = "none";
-    } else {
-      x.style.display = "block";
-    }
+    var button = document.getElementById("instructions-button");
+    var isExpanded = x.style.display === "block";
+    x.style.display = isExpanded ? "none" : "block";
+    button.setAttribute("aria-expanded", String(!isExpanded));
   }
 </script>
 
 <script>
   $(document).ready(function () {
-    // Hide confirmation controls until a valid number has been entered.
     $("#panel").hide();
     $("#bottoneconferma").hide();
   });
-</script>
 
-<script>
   $(function () {
     const $input = $("#guess-input");
     const $panel = $("#panel");
@@ -131,13 +89,11 @@
     const $hidden = $("#guess");
 
     function update() {
-      // Validate the browser input and copy it to the hidden oTree form field.
-      const raw = $input.val();
+      const raw = $input.val().trim();
       const num = Number(raw);
       const valid = raw !== "" && !Number.isNaN(num) && num >= 0 && num <= {{ C.GUESS_MAX }};
 
       if (valid) {
-        // Enable submission only when the value is within the configured range.
         $badge.text(num);
         $hidden.val(num);
         $panel.show();
@@ -152,11 +108,7 @@
       }
     }
 
-    $input.on("input change", update);
+    $input.on("input change keyup", update);
   });
 </script>
-
-
-
-
 {{ endblock }}

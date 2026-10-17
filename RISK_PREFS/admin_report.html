@@ -1,0 +1,546 @@
+{% load otree %}
+
+<h1>{{ t.admin_report_title }}</h1>
+
+<style>
+    .risk-report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0 1.5rem;
+    }
+
+    .risk-report-card {
+        border: 1px solid #dce8eb;
+        border-radius: 20px;
+        box-shadow: 0 10px 28px rgba(20, 65, 76, 0.08);
+        padding: 1.25rem;
+        background: #ffffff;
+        margin-bottom: 1rem;
+        color: #173b45;
+    }
+
+    .risk-report-section { border-top: 3px solid #006b7c; margin-top: 2rem; padding-top: 1.25rem; }
+    .risk-report-section > h2 { margin: 0 0 1rem; color: #173b45; font-weight: 750; }
+
+    .risk-report-card h3 {
+        margin-top: 0;
+        color: #173b45;
+        font-weight: 750;
+    }
+
+    .risk-report-stat {
+        color: #5d6d75;
+        font-size: 0.78rem;
+        font-weight: 750;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .risk-report-value {
+        color: #173b45;
+        font-size: 1.8rem;
+        font-weight: 750;
+        margin-top: .25rem;
+    }
+
+    .risk-report-chart {
+        width: 100%;
+        max-width: 980px;
+        height: auto;
+    }
+
+    .risk-report-table-wrap { overflow-x: auto; }
+    .risk-report-table th { background: #edf8f8; color: #173b45; font-weight: 750; border-color: #dce8eb; }
+    .risk-report-table td { vertical-align: middle; border-color: #dce8eb; }
+    .risk-report-table .crra-cell { min-width: 110px; font-variant-numeric: tabular-nums; }
+    .risk-report-table .mpl-warning { display: block; color: #dc2626; font-size: .8rem; font-weight: 600; }
+    .risk-report-table .average-count { display: block; color: #5d6d75; font-size: .8rem; }
+</style>
+
+<p>
+    {{ t.participants }}: <strong>{{ total_players }}</strong> |
+    {{ t.completed_mpl }}: <strong>{{ completed_mpl }}</strong> |
+    {{ t.completed_bret }}: <strong>{{ completed_bret }}</strong> |
+    {{ t.completed_investment }}: <strong>{{ completed_investment }}</strong> |
+    {{ t.completed_survey }}: <strong>{{ completed_survey }}</strong> |
+    {{ t.inconsistent_mpl_patterns }}: <strong>{{ inconsistent_mpl }}</strong>
+</p>
+
+<section class="risk-report-section">
+    <h2>{{ t.report_choice_distribution_title }}</h2>
+    <div class="risk-report-card">
+        <h3>{{ t.report_mpl_choice_title }}</h3>
+        <p>{{ t.frequency_a_by_row }}</p>
+        <canvas id="mplChoiceChart" class="risk-report-chart" width="980" height="380"></canvas>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.report_bret_choice_title }}</h3>
+        <p>{{ t.frequency_cards_turned }}</p>
+        <canvas id="bretCardsChart" class="risk-report-chart" width="980" height="380"></canvas>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.report_investment_choice_title }}</h3>
+        <p>{{ t.frequency_investment }}</p>
+        <canvas id="investmentChart" class="risk-report-chart" width="980" height="380"></canvas>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.report_survey_choice_title }}</h3>
+        <p>{{ t.general_risk_distribution_note }}</p>
+        <canvas id="generalRiskHistogramChart" class="risk-report-chart" width="980" height="380"></canvas>
+    </div>
+</section>
+
+<section class="risk-report-section">
+    <h2>{{ t.report_crra_estimates_title }}</h2>
+    <div class="risk-report-grid">
+        <div class="risk-report-card">
+            <div class="risk-report-stat">{{ t.mpl_crra_estimates }}</div>
+            <div class="risk-report-value">{{ mpl_crra_n }}</div>
+            <div>{{ t.mean }}: {% if mpl_crra_mean != None %}{{ mpl_crra_mean }}{% else %}—{% endif %}</div>
+        </div>
+        <div class="risk-report-card">
+            <div class="risk-report-stat">{{ t.bret_crra_estimates }}</div>
+            <div class="risk-report-value">{{ bret_crra_n }}</div>
+            <div>{{ t.mean }}: {% if bret_crra_mean != None %}{{ bret_crra_mean }}{% else %}—{% endif %}</div>
+        </div>
+        <div class="risk-report-card">
+            <div class="risk-report-stat">{{ t.investment_crra }}</div>
+            <div class="risk-report-value">{{ investment_crra_n }}</div>
+            <div>{{ t.mean }}: {% if investment_crra_mean != None %}{{ investment_crra_mean }}{% else %}—{% endif %}</div>
+        </div>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.report_mpl_crra_title }}</h3>
+        <p>{{ t.crra_distribution_note }}</p>
+        <canvas id="mplCrraHistogramChart" class="risk-report-chart" width="980" height="360"></canvas>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.report_bret_crra_title }}</h3>
+        <p>{{ t.crra_distribution_note }}</p>
+        <canvas id="bretCrraHistogramChart" class="risk-report-chart" width="980" height="360"></canvas>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.report_investment_crra_title }}</h3>
+        <p>{{ t.investment_crra_distribution_note }}</p>
+        <canvas id="investmentCrraHistogramChart" class="risk-report-chart" width="980" height="360"></canvas>
+    </div>
+</section>
+
+<section class="risk-report-section">
+    <h2>{{ t.report_survey_correlation_title }}</h2>
+    <div class="risk-report-card">
+        <h3>{{ t.mpl_survey_scatter_title }}</h3>
+        <p>{{ t.survey_scatter_note }}</p>
+        <p>{{ t.paired_observations }}: <strong>{{ mpl_survey_relationship.n }}</strong> |
+            {{ t.pearson_correlation }}:
+            <strong>{% if mpl_survey_relationship.r != None %}{{ mpl_survey_relationship.r }}{% else %}{{ t.correlation_unavailable }}{% endif %}</strong></p>
+        <canvas id="mplSurveyScatterChart" class="risk-report-chart" width="980" height="460"></canvas>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.bret_survey_scatter_title }}</h3>
+        <p>{{ t.survey_scatter_note }}</p>
+        <p>{{ t.paired_observations }}: <strong>{{ bret_survey_relationship.n }}</strong> |
+            {{ t.pearson_correlation }}:
+            <strong>{% if bret_survey_relationship.r != None %}{{ bret_survey_relationship.r }}{% else %}{{ t.correlation_unavailable }}{% endif %}</strong></p>
+        <canvas id="bretSurveyScatterChart" class="risk-report-chart" width="980" height="460"></canvas>
+    </div>
+    <div class="risk-report-card">
+        <h3>{{ t.investment_survey_scatter_title }}</h3>
+        <p>{{ t.survey_scatter_note }}</p>
+        <p>{{ t.paired_observations }}: <strong>{{ investment_survey_relationship.n }}</strong> |
+            {{ t.pearson_correlation }}:
+            <strong>{% if investment_survey_relationship.r != None %}{{ investment_survey_relationship.r }}{% else %}{{ t.correlation_unavailable }}{% endif %}</strong></p>
+        <canvas id="investmentSurveyScatterChart" class="risk-report-chart" width="980" height="460"></canvas>
+    </div>
+</section>
+
+<section class="risk-report-section">
+    <h2>{{ t.report_cross_task_title }}</h2>
+    <div class="risk-report-card">
+        <h3>{{ t.report_mpl_bret_title }}</h3>
+        <p>{{ t.scatter_axis_note }}</p>
+        <p>{{ t.paired_observations }}: <strong>{{ cross_task_relationship.n }}</strong> |
+            {{ t.pearson_correlation }}:
+            <strong>{% if cross_task_relationship.r != None %}{{ cross_task_relationship.r }}{% else %}{{ t.correlation_unavailable }}{% endif %}</strong></p>
+        <canvas id="crraScatterChart" class="risk-report-chart" width="760" height="640"></canvas>
+    </div>
+</section>
+
+<section class="risk-report-section">
+    <h2>{{ t.participant_risk_summary }}</h2>
+    <div class="risk-report-card">
+    <p>{{ t.crra_table_note }}</p>
+    <div class="risk-report-table-wrap">
+    <table class="table table-bordered table-sm risk-report-table">
+        <thead>
+            <tr>
+                <th>{{ t.participant }}</th>
+                <th>{{ t.mpl_crra }}</th>
+                <th>{{ t.bret_crra }}</th>
+                <th>{{ t.investment_crra }}</th>
+                <th>{{ t.self_reported_risk }}</th>
+                <th>{{ t.average_crra }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in participant_risk_rows %}
+            <tr>
+                <td>{{ row.participant }}</td>
+                <td class="crra-cell" style="{{ row.mpl.style }}">
+                    {{ row.mpl.text }}
+                    {% for warning in row.warnings %}<span class="mpl-warning">{{ warning }}</span>{% endfor %}
+                </td>
+                <td class="crra-cell" style="{{ row.bret.style }}">{{ row.bret.text }}</td>
+                <td class="crra-cell" style="{{ row.investment.style }}">{{ row.investment.text }}</td>
+                <td>{{ row.survey }}</td>
+                <td class="crra-cell" style="{{ row.average.style }}">
+                    {{ row.average.text }}
+                    {% if row.average_count %}<span class="average-count">{{ row.average_count }}/3</span>{% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">{{ t.no_observations }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+</section>
+
+<script>
+    (function() {
+        const mplRows = {{ mpl_rows|json }};
+        const bretRows = {{ bret_rows|json }};
+        const investmentRows = {{ investment_rows|json }};
+        const crraHistogram = {{ crra_histogram|json }};
+        const investmentCrraHistogram = {{ investment_crra_histogram|json }};
+        const scatterPoints = {{ scatter_points|json }};
+        const crossTaskRelationship = {{ cross_task_relationship|json }};
+        const generalRiskRows = {{ general_risk_rows|json }};
+        const mplSurveyRelationship = {{ mpl_survey_relationship|json }};
+        const bretSurveyRelationship = {{ bret_survey_relationship|json }};
+        const investmentSurveyRelationship = {{ investment_survey_relationship|json }};
+        const chartText = {{ t|json }};
+        const totalBretChoices = bretRows.reduce((sum, row) => sum + row.count, 0);
+        const totalMplCrra = crraHistogram.reduce((sum, row) => sum + row.mpl_count, 0);
+        const totalBretCrra = crraHistogram.reduce((sum, row) => sum + row.bret_count, 0);
+        const totalInvestmentCrra = investmentCrraHistogram.reduce((sum, row) => sum + row.count, 0);
+
+        function canvasContext(id) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return null;
+            return canvas.getContext('2d');
+        }
+
+        function drawNoData(ctx, canvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#57606a';
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(chartText.no_observations, canvas.width / 2, canvas.height / 2);
+        }
+
+        function drawAxes(ctx, left, top, right, bottom) {
+            ctx.strokeStyle = '#8c959f';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(left, top);
+            ctx.lineTo(left, bottom);
+            ctx.lineTo(right, bottom);
+            ctx.stroke();
+        }
+
+        function drawSingleBarChart(id, labels, values, options) {
+            const ctx = canvasContext(id);
+            if (!ctx) return;
+            const canvas = ctx.canvas;
+            if (!values.some((value) => value > 0)) {
+                drawNoData(ctx, canvas);
+                return;
+            }
+
+            const left = 58;
+            const top = 24;
+            const right = canvas.width - 24;
+            const bottom = canvas.height - 58;
+            const maxY = options.maxY || Math.max(...values, 1);
+            const chartWidth = right - left;
+            const barGap = labels.length > 20 ? 2 : 8;
+            const barWidth = Math.max(2, chartWidth / labels.length - barGap);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes(ctx, left, top, right, bottom);
+
+            ctx.fillStyle = '#57606a';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const value = maxY * i / 5;
+                const y = bottom - (value / maxY) * (bottom - top);
+                ctx.fillText(options.percent ? `${Math.round(value)}%` : Math.round(value), left - 8, y + 4);
+                ctx.strokeStyle = '#eaeef2';
+                ctx.beginPath();
+                ctx.moveTo(left, y);
+                ctx.lineTo(right, y);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = options.color || '#2563eb';
+            values.forEach((value, index) => {
+                const x = left + index * (chartWidth / labels.length) + barGap / 2;
+                const height = (value / maxY) * (bottom - top);
+                ctx.fillRect(x, bottom - height, barWidth, height);
+            });
+
+            ctx.fillStyle = '#24292f';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            labels.forEach((label, index) => {
+                const shouldShow = labels.length <= 20 || index % 4 === 0;
+                if (!shouldShow) return;
+                const x = left + index * (chartWidth / labels.length) + chartWidth / labels.length / 2;
+                ctx.fillText(label, x, bottom + 20);
+            });
+
+            ctx.fillStyle = '#57606a';
+            ctx.fillText(options.xLabel || '', (left + right) / 2, canvas.height - 12);
+        }
+
+        function drawScatter(id, points) {
+            const ctx = canvasContext(id);
+            if (!ctx) return;
+            const canvas = ctx.canvas;
+            if (!points.length) {
+                drawNoData(ctx, canvas);
+                return;
+            }
+
+            const left = 82;
+            const top = 34;
+            const right = canvas.width - 36;
+            const bottom = canvas.height - 72;
+            const maxAbs = Math.max(
+                1,
+                ...points.map((point) => Math.abs(point.mpl)),
+                ...points.map((point) => Math.abs(point.bret))
+            );
+            const limit = Math.ceil(maxAbs * 1.1 * 10) / 10;
+            const minX = -limit;
+            const maxX = limit;
+            const minY = -limit;
+            const maxY = limit;
+            const scaleX = (value) => left + ((value - minX) / (maxX - minX)) * (right - left);
+            const scaleY = (value) => bottom - ((value - minY) / (maxY - minY)) * (bottom - top);
+            const zeroX = scaleX(0);
+            const zeroY = scaleY(0);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#eef6f3';
+            ctx.fillRect(zeroX, top, right - zeroX, zeroY - top);
+            ctx.fillStyle = '#f6f0e8';
+            ctx.fillRect(left, zeroY, zeroX - left, bottom - zeroY);
+            ctx.fillStyle = '#f7ecef';
+            ctx.fillRect(zeroX, zeroY, right - zeroX, bottom - zeroY);
+            ctx.fillStyle = '#eef2fb';
+            ctx.fillRect(left, top, zeroX - left, zeroY - top);
+
+            drawAxes(ctx, left, top, right, bottom);
+            ctx.strokeStyle = '#57606a';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(zeroX, top);
+            ctx.lineTo(zeroX, bottom);
+            ctx.moveTo(left, zeroY);
+            ctx.lineTo(right, zeroY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#57606a';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(chartText.consistently_risk_averse, (zeroX + right) / 2, top + 18);
+            ctx.fillText(chartText.consistently_risk_seeker, (left + zeroX) / 2, bottom - 10);
+            ctx.fillText(chartText.bret_seeker_mpl_averse, (zeroX + right) / 2, bottom - 10);
+            ctx.fillText(chartText.bret_averse_mpl_seeker, (left + zeroX) / 2, top + 18);
+
+            ctx.fillStyle = '#24292f';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            for (let i = -5; i <= 5; i++) {
+                const value = limit * i / 5;
+                const x = scaleX(value);
+                const y = scaleY(value);
+                ctx.fillText(value.toFixed(1), x, bottom + 18);
+                ctx.textAlign = 'right';
+                ctx.fillText(value.toFixed(1), left - 8, y + 4);
+                ctx.textAlign = 'center';
+            }
+
+            points.forEach((point) => {
+                ctx.fillStyle = '#1f6feb';
+                ctx.beginPath();
+                ctx.arc(scaleX(point.mpl), scaleY(point.bret), 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.fillStyle = '#24292f';
+            ctx.font = '13px sans-serif';
+            ctx.fillText(chartText.mpl_crra, (left + right) / 2, canvas.height - 24);
+            ctx.save();
+            ctx.translate(22, (top + bottom) / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(chartText.bret_crra, 0, 0);
+            ctx.restore();
+        }
+
+        function drawSurveyScatter(id, relationship, yLabel, pointColor) {
+            const ctx = canvasContext(id);
+            if (!ctx) return;
+            const canvas = ctx.canvas;
+            const points = relationship.points;
+            if (!points.length) {
+                drawNoData(ctx, canvas);
+                return;
+            }
+
+            const left = 82;
+            const top = 34;
+            const right = canvas.width - 32;
+            const bottom = canvas.height - 72;
+            const yValues = points.map((point) => point.y)
+                .concat(relationship.fit.map((point) => point.y));
+            const observedMin = Math.min(...yValues);
+            const observedMax = Math.max(...yValues);
+            const padding = Math.max((observedMax - observedMin) * 0.1, 0.2);
+            const minY = observedMin - padding;
+            const maxY = observedMax + padding;
+            const scaleX = (value) => left + value / 10 * (right - left);
+            const scaleY = (value) => bottom - (value - minY) / (maxY - minY) * (bottom - top);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const value = minY + (maxY - minY) * i / 5;
+                const y = scaleY(value);
+                ctx.strokeStyle = '#eaeef2';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(left, y);
+                ctx.lineTo(right, y);
+                ctx.stroke();
+                ctx.fillStyle = '#57606a';
+                ctx.fillText(value.toFixed(1), left - 8, y + 4);
+            }
+            drawAxes(ctx, left, top, right, bottom);
+
+            ctx.fillStyle = '#57606a';
+            ctx.textAlign = 'center';
+            for (let answer = 0; answer <= 10; answer++) {
+                ctx.fillText(String(answer), scaleX(answer), bottom + 20);
+            }
+
+            if (relationship.fit.length === 2) {
+                ctx.strokeStyle = '#c2410c';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(scaleX(relationship.fit[0].x), scaleY(relationship.fit[0].y));
+                ctx.lineTo(scaleX(relationship.fit[1].x), scaleY(relationship.fit[1].y));
+                ctx.stroke();
+
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(right - 145, top + 12);
+                ctx.lineTo(right - 115, top + 12);
+                ctx.stroke();
+                ctx.fillStyle = '#24292f';
+                ctx.textAlign = 'left';
+                ctx.fillText(chartText.linear_fit_label, right - 108, top + 16);
+            }
+
+            ctx.fillStyle = pointColor;
+            ctx.globalAlpha = 0.7;
+            points.forEach((point) => {
+                ctx.beginPath();
+                ctx.arc(scaleX(point.x), scaleY(point.y), 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            ctx.fillStyle = '#24292f';
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(chartText.general_risk_axis, (left + right) / 2, canvas.height - 24);
+            ctx.save();
+            ctx.translate(22, (top + bottom) / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(yLabel, 0, 0);
+            ctx.restore();
+        }
+
+        drawSingleBarChart(
+            'mplChoiceChart',
+            mplRows.map((row) => String(row.row)),
+            mplRows.map((row) => row.percent_a || 0),
+            { maxY: 100, percent: true, color: '#3c7570', xLabel: chartText.mpl_row_axis }
+        );
+        drawSingleBarChart(
+            'bretCardsChart',
+            bretRows.map((row) => String(row.cards)),
+            bretRows.map((row) => totalBretChoices > 0 ? 100 * row.count / totalBretChoices : 0),
+            { maxY: 100, percent: true, color: '#7c3aed', xLabel: chartText.cards_turned }
+        );
+        drawSingleBarChart(
+            'investmentChart',
+            investmentRows.map((row) => row.label),
+            investmentRows.map((row) => row.count),
+            {
+                maxY: Math.max(5, ...investmentRows.map((row) => row.count)),
+                color: '#c2410c',
+                xLabel: chartText.investment_axis
+            }
+        );
+        drawSingleBarChart(
+            'generalRiskHistogramChart',
+            generalRiskRows.map((row) => String(row.answer)),
+            generalRiskRows.map((row) => row.count),
+            {
+                maxY: Math.max(5, ...generalRiskRows.map((row) => row.count)),
+                color: '#2563eb',
+                xLabel: chartText.general_risk_axis
+            }
+        );
+        drawSurveyScatter(
+            'mplSurveyScatterChart', mplSurveyRelationship,
+            chartText.mpl_crra_midpoint_axis, '#3c7570'
+        );
+        drawSurveyScatter(
+            'bretSurveyScatterChart', bretSurveyRelationship,
+            chartText.bret_crra_midpoint_axis, '#7c3aed'
+        );
+        drawSurveyScatter(
+            'investmentSurveyScatterChart', investmentSurveyRelationship,
+            chartText.investment_crra_axis, '#1f6feb'
+        );
+        drawSingleBarChart(
+            'mplCrraHistogramChart',
+            crraHistogram.map((row) => row.label),
+            crraHistogram.map((row) => totalMplCrra > 0 ? 100 * row.mpl_count / totalMplCrra : 0),
+            { maxY: 100, percent: true, color: '#3c7570', xLabel: chartText.mpl_crra_midpoint_axis }
+        );
+        drawSingleBarChart(
+            'bretCrraHistogramChart',
+            crraHistogram.map((row) => row.label),
+            crraHistogram.map((row) => totalBretCrra > 0 ? 100 * row.bret_count / totalBretCrra : 0),
+            { maxY: 100, percent: true, color: '#7c3aed', xLabel: chartText.bret_crra_midpoint_axis }
+        );
+        drawSingleBarChart(
+            'investmentCrraHistogramChart',
+            investmentCrraHistogram.map((row) => row.label),
+            investmentCrraHistogram.map((row) => totalInvestmentCrra > 0 ? 100 * row.count / totalInvestmentCrra : 0),
+            { maxY: 100, percent: true, color: '#c2410c', xLabel: chartText.investment_crra_axis }
+        );
+        drawScatter('crraScatterChart', scatterPoints);
+    })();
+</script>

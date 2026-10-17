@@ -1,0 +1,103 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.investment_title }}
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+<style>
+    .investment-preview { margin-top: 1.5rem; padding: 1.1rem; border: 1px solid #dce8eb; border-radius: 16px; background: linear-gradient(135deg, #effafa 0%, #ffffff 65%); }
+    .investment-preview h3 { margin: 0 0 .75rem; font-size: 1.12rem; color: #173b45; font-weight: 750; }
+    .investment-preview-outcomes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; }
+    .investment-preview-outcomes[hidden] { display: none; }
+    .investment-preview-outcome { padding: .85rem; border-radius: 14px; background: rgba(255, 255, 255, 0.88); border: 1px solid #dcebed; }
+    .investment-preview-outcome strong { display: block; margin-top: .4rem; font-size: 1.35rem; color: #173b45; font-variant-numeric: tabular-nums; }
+    .investment-preview-note { margin: .75rem 0 0; color: #5d6d75; font-size: .9rem; }
+    .investment-slider { margin: 1.5rem 0; }
+    .investment-slider input { width: 100%; accent-color: #006b7c; }
+    .investment-slider-values { display: flex; justify-content: space-between; margin-top: .25rem; color: #5d6d75; font-variant-numeric: tabular-nums; }
+    .investment-slider-selected { margin: .75rem 0 0; font-size: 1.1rem; font-weight: 700; color: #173b45; text-align: center; }
+</style>
+{{ endblock }}
+
+{{ block content }}
+<div class="otree-card risk-card">
+    <h2 id="investment-choice-question">{{ t.investment_choice_question }}</h2>
+    <p>{{ investment_choice_hint }}</p>
+    <div class="investment-slider">
+        <input
+            id="id_investment_amount"
+            name="investment_amount"
+            type="range"
+            min="0"
+            max="{{ investment_endowment }}"
+            step="1"
+            value="0"
+            aria-labelledby="investment-choice-question"
+            aria-describedby="investment-slider-selected"
+        >
+        <div class="investment-slider-values" aria-hidden="true">
+            <span>0</span>
+            <span>{{ investment_endowment }}</span>
+        </div>
+        <p id="investment-slider-selected" class="investment-slider-selected">
+            <span id="investment-selected-amount">0</span> {{ t.investment_preview_tokens }}
+        </p>
+    </div>
+    {{ formfield_errors 'investment_amount' }}
+    <div class="investment-preview" aria-live="polite">
+        <h3>{{ t.investment_preview_title }}</h3>
+        <p id="investment-preview-prompt">{{ t.investment_preview_prompt }}</p>
+        <div id="investment-preview-outcomes" class="investment-preview-outcomes" hidden>
+            <div class="investment-preview-outcome">
+                <span>{{ t.investment_preview_low }}</span>
+                <strong><span id="investment-preview-low"></span> {{ t.investment_preview_tokens }}</strong>
+            </div>
+            <div class="investment-preview-outcome">
+                <span>{{ t.investment_preview_high }}</span>
+                <strong><span id="investment-preview-high"></span> {{ t.investment_preview_tokens }}</strong>
+            </div>
+        </div>
+        <p class="investment-preview-note">{{ t.investment_preview_note }}</p>
+    </div>
+</div>
+<div class="row">
+    <br>
+    <div class="col-md-10 text-end">
+        <button id="btn_submit" class="otree-btn-next">{{ t.confirm_choice }}</button>
+    </div>
+</div>
+<script>
+    (function () {
+        const input = document.querySelector('[name="investment_amount"]');
+        if (!input) return;
+        const endowment = {{ investment_endowment }};
+        const highReturnMultiplier = {{ investment_high_return_multiplier }};
+        const locale = '{{ lang }}' === 'it' ? 'it-IT' : 'en-US';
+        const prompt = document.getElementById('investment-preview-prompt');
+        const outcomes = document.getElementById('investment-preview-outcomes');
+        const low = document.getElementById('investment-preview-low');
+        const high = document.getElementById('investment-preview-high');
+        const selectedAmount = document.getElementById('investment-selected-amount');
+        const format = (value) => value.toLocaleString(locale, { maximumFractionDigits: 1 });
+
+        function updatePreview() {
+            const amount = Number(input.value);
+            const valid = input.value.trim() !== '' && Number.isInteger(amount)
+                && amount >= 0 && amount <= endowment;
+            prompt.hidden = valid;
+            outcomes.hidden = !valid;
+            if (!valid) return;
+            selectedAmount.textContent = format(amount);
+            low.textContent = format(endowment - amount);
+            high.textContent = format(endowment + highReturnMultiplier * amount);
+        }
+
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+        updatePreview();
+    })();
+</script>
+{{ endblock }}

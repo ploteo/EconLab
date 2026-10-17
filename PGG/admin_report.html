@@ -1,5 +1,58 @@
 {% load otree %}
 
+<style>
+    .pgg-admin-report { color: #173b45; max-width: 960px; margin: 0 auto; }
+    .pgg-admin-card {
+        background: #ffffff;
+        border: 1px solid #dce8eb;
+        border-radius: 20px;
+        box-shadow: 0 10px 28px rgba(20, 65, 76, 0.08);
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    .pgg-admin-card h3 { color: #173b45; font-weight: 750; margin-top: 0; }
+    .pgg-admin-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+    .pgg-admin-metric {
+        background: linear-gradient(135deg, #effafa 0%, #ffffff 65%);
+        border: 1px solid #dcebed;
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
+    }
+    .pgg-admin-metric-label {
+        color: #5d6d75;
+        font-size: 0.75rem;
+        font-weight: 750;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+    .pgg-admin-metric-val {
+        color: #173b45;
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1.15;
+        margin-top: 0.25rem;
+    }
+    .pgg-ai-card {
+        background: #fbfdfd;
+        border: 1px solid #dce8eb;
+        border-top: 4px solid #006b7c;
+        border-radius: 16px;
+        padding: 1.15rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    .pgg-admin-report table th {
+        background: #edf8f8;
+        color: #173b45;
+        font-weight: 750;
+    }
+</style>
+
+<div class="pgg-admin-report">
 <h2>{{ t.admin_report_title }}</h2>
 
 <p>
@@ -11,28 +64,28 @@
 </p>
 
 {% if recorded_choices %}
-<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
-    <h3 style="margin-top: 0;">{{ t.overall_contributions }}</h3>
+<div class="pgg-admin-card">
+    <h3>{{ t.overall_contributions }}</h3>
 
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
-        <div style="min-width: 180px;">
-            <div style="color: #57606a; font-size: .9rem;">{{ t.overall_mean }}</div>
-            <div style="font-size: 2rem; font-weight: 700;">{{ overall_mean }}</div>
+    <div class="pgg-admin-metrics">
+        <div class="pgg-admin-metric">
+            <div class="pgg-admin-metric-label">{{ t.overall_mean }}</div>
+            <div class="pgg-admin-metric-val">{{ overall_mean }}</div>
         </div>
-        <div style="min-width: 180px;">
-            <div style="color: #57606a; font-size: .9rem;">{{ t.total_contributed }}</div>
-            <div style="font-size: 2rem; font-weight: 700;">{{ overall_total }}</div>
+        <div class="pgg-admin-metric">
+            <div class="pgg-admin-metric-label">{{ t.total_contributed }}</div>
+            <div class="pgg-admin-metric-val">{{ overall_total }}</div>
         </div>
-        <div style="min-width: 180px;">
-            <div style="color: #57606a; font-size: .9rem;">{{ t.individual_endowment }}</div>
-            <div style="font-size: 2rem; font-weight: 700;">{{ endowment }}</div>
+        <div class="pgg-admin-metric">
+            <div class="pgg-admin-metric-label">{{ t.individual_endowment }}</div>
+            <div class="pgg-admin-metric-val">{{ endowment }}</div>
         </div>
     </div>
 
     {% if ai_commentary_html %}
-    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem; background: #f6f8fa;">
+    <div class="pgg-ai-card">
         <h3 style="margin-top: 0;">{{ t.ai_commentary_title }}</h3>
-        <div style="line-height: 1.5;">
+        <div style="line-height: 1.55; color: #334d56;">
             {{ ai_commentary_html|safe }}
         </div>
     </div>
@@ -92,8 +145,8 @@
     </table>
 </div>
 
-<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
-    <h3 style="margin-top: 0;">{{ t.group_mean_contributions }}</h3>
+<div class="pgg-admin-card">
+    <h3>{{ t.group_mean_contributions }}</h3>
 
     <div style="max-width: 920px; margin-bottom: 1.5rem;">
         <canvas id="groupContributionChart" width="920" height="420" style="width: 100%;"></canvas>
@@ -146,8 +199,8 @@
 </div>
 
 {% if earnings_rows %}
-<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
-    <h3 style="margin-top: 0;">{{ t.earnings_ranking }}</h3>
+<div class="pgg-admin-card">
+    <h3>{{ t.earnings_ranking }}</h3>
 
     <table class="table table-striped table-sm">
         <thead>
@@ -412,3 +465,4 @@
 {% else %}
 <p>{{ t.no_contributions }}</p>
 {% endif %}
+</div>

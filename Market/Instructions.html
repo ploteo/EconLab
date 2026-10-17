@@ -1,0 +1,71 @@
+{{ block title }}{{ t.instructions_title }}{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{{ static 'market.css' }}">
+{{ endblock }}
+
+{{ block content }}
+<main class="instructions-shell">
+    <section class="instructions-card">
+        <header class="instructions-header">
+            <div class="eyebrow">{{ t.before_trading }}</div>
+            <h1>{{ t.how_market_works }}</h1>
+            <p>{{ t.assignment_intro }}</p>
+        </header>
+
+        <div class="instructions-grid">
+            <article class="instruction-card buyer-instruction">
+                <div class="instruction-number">01</div>
+                <div>
+                    <div class="eyebrow">{{ t.if_buyer }}</div>
+                    <h2>{{ t.buyer_private }}</h2>
+                    <p>{{ t.buyer_rule }}</p>
+                    <div class="instruction-formula">
+                        {{ t.buyer_formula }}
+                    </div>
+                </div>
+            </article>
+
+            <article class="instruction-card seller-instruction">
+                <div class="instruction-number">02</div>
+                <div>
+                    <div class="eyebrow">{{ t.if_seller }}</div>
+                    <h2>{{ t.seller_private }}</h2>
+                    <p>{{ t.seller_rule }}</p>
+                    <div class="instruction-formula">
+                        {{ t.seller_formula }}
+                    </div>
+                </div>
+            </article>
+
+            <article class="instruction-card">
+                <div class="instruction-number">03</div>
+                <div>
+                    <div class="eyebrow">{{ t.making_trade }}</div>
+                    <h2>{{ t.bids_asks_meet }}</h2>
+                    <p>{{ t.matching_rule }}</p>
+                </div>
+            </article>
+
+            <article class="instruction-card">
+                <div class="instruction-number">04</div>
+                <div>
+                    <div class="eyebrow">{{ t.during_round }}</div>
+                    <h2>{{ t.trade_once }}</h2>
+                    <p>{{ t.revise_offer }}</p>
+                </div>
+            </article>
+        </div>
+
+        <aside class="instruction-note">
+            <strong>{{ t.remember }}</strong>
+            <span>{{ t.remember_rule }}</span>
+        </aside>
+
+        <footer class="instructions-footer">
+            <span>{{ t.instructor_opens }}</span>
+            <button class="primary-button otree-btn-next">{{ t.understand_continue }}</button>
+        </footer>
+    </section>
+</main>
+{{ endblock }}

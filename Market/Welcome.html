@@ -1,0 +1,26 @@
+{{ block title }}{{ t.welcome_title }}{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{{ static 'market.css' }}">
+{{ endblock }}
+
+{{ block content }}
+<main class="market-shell welcome-shell">
+    <section class="hero-card">
+        <div class="eyebrow">{{ t.auction_type }}</div>
+        <h1>{{ t.welcome_heading }}</h1>
+        <p class="lead">
+            {{ t.welcome_lead }}
+        </p>
+        <div class="join-form">
+            {{ formfield player.nickname label=t.nickname_label }}
+            <button class="primary-button otree-btn-next">{{ t.enter_market }}</button>
+        </div>
+        <div class="rule-strip">
+            <span>{{ t.one_unit }}</span>
+            <span>{{ t.one_trade_round }}</span>
+            <span>{{ t.private_values }}</span>
+        </div>
+    </section>
+</main>
+{{ endblock }}

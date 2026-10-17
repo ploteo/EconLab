@@ -1,0 +1,51 @@
+<script>
+  (() => {
+    document.querySelectorAll('.pgg-payoff-explainer').forEach(explainer => {
+      const endowment = Number(explainer.dataset.endowment);
+      const multiplier = Number(explainer.dataset.multiplier);
+      const players = Number(explainer.dataset.players);
+      const locale = explainer.dataset.locale === 'it' ? 'it-IT' : 'en';
+      const inputs = Array.from(explainer.querySelectorAll('[data-contribution]'));
+      const outputs = Array.from(explainer.querySelectorAll('[data-output]'));
+
+      if (!Number.isFinite(endowment) || !Number.isFinite(multiplier) || !Number.isFinite(players)) return;
+
+      const formatNumber = value => new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 2,
+      }).format(Math.round(value * 100) / 100);
+
+      const setValue = (name, value) => {
+        explainer.querySelectorAll(`[data-value="${name}"]`).forEach(element => {
+          element.textContent = formatNumber(value);
+        });
+      };
+
+      const update = () => {
+        const contributions = inputs.map(input => Number(input.value));
+        const totalContribution = contributions.reduce((total, value) => total + value, 0);
+        const projectReturn = totalContribution * multiplier;
+        const individualShare = projectReturn / players;
+
+        contributions.forEach((value, index) => {
+          outputs[index].textContent = `${formatNumber(value)} E`;
+          inputs[index].style.setProperty('--pgg-fill', `${(value / endowment) * 100}%`);
+          const bar = explainer.querySelector(`[data-bar="${index}"]`);
+          if (bar) bar.style.width = `${(value / (endowment * players)) * 96}%`;
+        });
+
+        setValue('total-contributions', totalContribution);
+        setValue('project-return', projectReturn);
+        setValue('individual-share', individualShare);
+        setValue('amount-kept', endowment - contributions[0]);
+        setValue('your-payoff', endowment - contributions[0] + individualShare);
+      };
+
+      const exampleContribution = Math.round(endowment / 2);
+      inputs.forEach(input => {
+        input.value = exampleContribution;
+        input.addEventListener('input', update);
+      });
+      update();
+    });
+  })();
+</script>

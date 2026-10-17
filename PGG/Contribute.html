@@ -1,34 +1,73 @@
 {{ extends "global/Page.html" }}
 {{ load staticfiles otree }}
 
-
-
 {{ block title }}
-<h1>{{ t.contribute_title }} ({{ t.round }} {{ round_number }} {{ t.of }} {{ Constants.num_rounds }})<h1>
-    {{ endblock }}
+<h1>{{ t.contribute_title }} ({{ t.round }} {{ round_number }} {{ t.of }} {{ Constants.num_rounds }})</h1>
+{{ endblock }}
 
-    {{ block content }}
+{{ block content }}
 
+<button type="button" id="instructions-toggle" aria-expanded="false" aria-controls="instructions-panel">
+  {{ t.instructions_toggle }}
+</button>
 
-    <div class="box">
+<section id="instructions-panel" class="box" hidden>
+  <h2>{{ t.instructions_title }}</h2>
+  <h3>{{ t.interaction_heading }}</h3>
+  <p>{{ t.instructions_group_prefix }} {{ Constants.players_per_group }} {{ t.participants }}.</p>
+  <p>{{ t.groups_random }}</p>
+  <p>{{ t.endowment_prefix }} {{ Constants.endowment }} {{ t.endowment_suffix }}</p>
+  <p>{{ t.contribution_decision }}</p>
+  <p>{{ t.contribution_range_prefix }} {{ Constants.endowment }}.</p>
 
-      {{ formfield player.choice label=t.choice_label }}
+  <section class="instructions-earnings">
+    <h3>{{ t.earnings_heading }}</h3>
+    <p>{{ t.earnings_intro }}</p>
+    {{ include_sibling 'PayoffExplainer.html' }}
+    {{ include_sibling 'PayoffRule.html' }}
+  </section>
 
+  <p>{{ t.repetitions_prefix }} {{ Constants.num_rounds }} {{ t.repetitions_mid }} {{ other_players }} {{ t.repetitions_suffix }}</p>
+  <p>{{ t.total_payoff_rule }}</p>
+</section>
 
-      <small>{{ t.integer_hint_prefix }} {{ endowment }}</small>
+<div class="box">
+  {{ formfield player.choice label=t.choice_label }}
+  <small>{{ t.integer_hint_prefix }} {{ endowment }}</small>
+</div>
 
-    </div>
+{{ next_button }}
 
+{{ endblock }}
 
- {{ next_button }}
+{{ block scripts }}
+<script>
+  (() => {
+    const toggle = document.getElementById('instructions-toggle');
+    const panel = document.getElementById('instructions-panel');
+    const choice = document.querySelector('input[name="choice"]');
 
+    toggle.addEventListener('click', () => {
+      const willShow = panel.hidden;
+      panel.hidden = !willShow;
+      toggle.setAttribute('aria-expanded', String(willShow));
+    });
 
+    // The server validates this too, so pasted or manually altered values are safe.
+    choice.setAttribute('step', '1');
+    choice.setAttribute('inputmode', 'numeric');
+    choice.addEventListener('input', () => {
+      if (choice.value && !/^\d+$/.test(choice.value)) {
+        choice.setCustomValidity('{{ t.integer_error }}');
+      } else {
+        choice.setCustomValidity('');
+      }
+    });
+  })();
+</script>
+{{ include_sibling 'PayoffExplainerScript.html' }}
+{{ endblock }}
 
-    {{ endblock }}
-
-    {{ block styles}}
-    
-    <link href="{{static 'styles.css' }}" rel="stylesheet">
-    <link href="{{static 'styles.css' }}" rel="stylesheet">
-    
-    {{ endblock }}
+{{ block styles}}
+<link href="{{ static 'styles.css' }}" rel="stylesheet">
+{{ endblock }}

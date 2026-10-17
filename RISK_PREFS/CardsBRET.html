@@ -1,0 +1,87 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.your_cards_title }}
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+{{ endblock }}
+
+{{ block content }}
+
+<div class="otree-card risk-card">
+    <table class="table bret-choice-table">
+        <tbody>
+            {% for row in card_rows %}
+            <tr>
+                {% for card_number in row %}
+                <td class="bret-card-cell">
+                    <button type="button" class="bret-card-choice" data-card-number="{{ card_number }}" aria-pressed="false">
+                        <img src="{% static 'RISK_PREFS/card_back.png' %}" alt="{{ t.card_back_alt }} {{ card_number }}" style="width: 75px; height: 80px;">
+                        <span class="bret-card-number">{{ card_number }}</span>
+                    </button>
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p>{{ t.bret_cards_question }}</p>
+    {% if lang == 'it' %}
+    <p class="bret-selection-counter" aria-live="polite">Carte selezionate: <strong><span id="selected-card-count">0</span> / {{ C.BRET_NUM_CARDS }}</strong></p>
+    <p class="text-muted">Clicca su una carta per selezionarla o deselezionarla.</p>
+    {% else %}
+    <p class="bret-selection-counter" aria-live="polite">Cards selected: <strong><span id="selected-card-count">0</span> / {{ C.BRET_NUM_CARDS }}</strong></p>
+    <p class="text-muted">Click a card to select or deselect it.</p>
+    {% endif %}
+    <input type="hidden" name="cards_flipped" id="cards-flipped-input" value="0">
+    <input type="hidden" name="selected_bret_cards" id="selected-bret-cards-input" value="[]">
+    {{ formfield_errors 'cards_flipped' }}
+    {{ formfield_errors 'selected_bret_cards' }}
+</div>
+
+<div class="row">
+    <br>
+    <div class="col-md-10 text-end">
+        <button id="btn_submit" class="otree-btn-next">{{ t.confirm_choice }}</button>
+    </div>
+</div>
+
+{{ endblock }}
+
+{{ block scripts }}
+
+<script>
+    (function () {
+        const countInput = document.getElementById('cards-flipped-input');
+        const selectedCardsInput = document.getElementById('selected-bret-cards-input');
+        const counter = document.getElementById('selected-card-count');
+        const cards = document.querySelectorAll('.bret-card-choice');
+        const selectedCards = new Set();
+
+        function updateSelectedCards() {
+            cards.forEach(card => {
+                const cardNumber = Number(card.dataset.cardNumber);
+                const isSelected = selectedCards.has(cardNumber);
+                card.classList.toggle('is-selected', isSelected);
+                card.setAttribute('aria-pressed', String(isSelected));
+            });
+            const selected = Array.from(selectedCards).sort((a, b) => a - b);
+            countInput.value = selected.length;
+            selectedCardsInput.value = JSON.stringify(selected);
+            counter.textContent = selected.length;
+        }
+
+        cards.forEach(card => card.addEventListener('click', () => {
+            const cardNumber = Number(card.dataset.cardNumber);
+            selectedCards.has(cardNumber) ? selectedCards.delete(cardNumber) : selectedCards.add(cardNumber);
+            updateSelectedCards();
+        }));
+        updateSelectedCards();
+    })();
+</script>
+
+{{ endblock }}

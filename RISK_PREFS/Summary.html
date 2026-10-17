@@ -1,0 +1,226 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.summary_title }}
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+<style>
+    .risk-reveal-panel { border: 1px solid #dce8eb; border-radius: 18px; box-shadow: 0 8px 22px rgba(20, 65, 76, 0.06); padding: 1.15rem 1.25rem; margin: 1.35rem 0; background: #fff; }
+    .risk-reveal-panel h3 { margin: 0 0 .75rem; color: #173b45; font-weight: 750; }
+    .risk-reveal-panel [hidden], #summary-final-feedback[hidden], #summary-next[hidden] { display: none !important; }
+    .risk-reveal-result { border-top: 1px solid #dce8eb; margin-top: 1rem; padding-top: 1rem; }
+    .risk-reveal-result p { margin-bottom: .5rem; }
+    .risk-reveal-legend { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: .75rem 0; }
+    .risk-reveal-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+    .risk-reveal-swatch { display: inline-block; width: 1rem; height: 1rem; border-radius: 50%; }
+    .risk-reveal-swatch.high { background: #006b7c; }
+    .risk-reveal-swatch.low { background: #d97706; }
+    .mpl-ball-urn { display: flex; flex-wrap: wrap; gap: .6rem; min-height: 3.5rem; padding: .75rem; border: 2px solid #dce8eb; border-radius: 14px; background: #f7fafb; }
+    .mpl-ball { display: inline-flex; width: 2.6rem; height: 2.6rem; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 750; box-shadow: inset -5px -6px 9px rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.15); }
+    .mpl-ball.high { background: #006b7c; }
+    .mpl-ball.low { background: #d97706; }
+    .mpl-ball-urn.is-drawing .mpl-ball { animation: mpl-jostle .45s ease-in-out infinite alternate; animation-delay: calc(var(--ball-index) * 40ms); }
+    .mpl-drawn-ball { min-height: 3.5rem; display: flex; align-items: center; gap: .75rem; margin-top: .75rem; font-weight: 600; }
+    .mpl-drawn-ball .mpl-ball { width: 3.2rem; height: 3.2rem; font-size: 1.15rem; animation: mpl-extract .55s ease-out both; }
+    @keyframes mpl-jostle { from { transform: translate(-3px, 3px) rotate(-10deg); } to { transform: translate(4px, -3px) rotate(10deg); } }
+    @keyframes mpl-extract { from { transform: translateY(-24px) scale(.5); opacity: .3; } to { transform: translateY(0) scale(1); opacity: 1; } }
+    .bret-grid-scroll { max-width: 100%; overflow-x: auto; }
+    .bret-reveal-grid { min-width: 680px; }
+    .investment-wheel-stage { position: relative; width: 280px; max-width: 80vw; aspect-ratio: 1; margin: 1rem auto; }
+    .investment-wheel { position: absolute; inset: 0; border: 8px solid #dce8eb; border-radius: 50%; background: conic-gradient(#d97706 0deg 240deg, #006b7c 240deg 360deg); box-shadow: 0 3px 12px rgba(20, 65, 76, 0.16); transition: transform 3.2s cubic-bezier(.15,.72,.12,1); }
+    .investment-wheel-label { position: absolute; color: #fff; font-size: 1.3rem; font-weight: 700; transform: translate(-50%, -50%); text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+    .investment-wheel-label.low { left: 73%; top: 62%; }
+    .investment-wheel-label.high { left: 27%; top: 38%; }
+    .investment-wheel-pointer { position: absolute; z-index: 2; top: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 28px solid #173b45; }
+    .risk-reveal-wait { color: #5d6d75; font-style: italic; }
+    @media (prefers-reduced-motion: reduce) {
+        .mpl-ball-urn.is-drawing .mpl-ball { animation: none; }
+        .mpl-drawn-ball .mpl-ball { animation: none; }
+        .investment-wheel { transition: none; }
+    }
+</style>
+{{ endblock }}
+
+{{ block content }}
+<div class="otree-card risk-card">
+    <h2>{{ t.summary_heading }}</h2>
+    <p>{{ t.reveal_intro }}</p>
+
+    <section class="risk-reveal-panel" aria-labelledby="mpl-reveal-heading">
+        <h3 id="mpl-reveal-heading">{{ t.mpl_reveal_title }}</h3>
+        <p>{{ mpl_reveal_setup }}</p>
+        <p>{{ mpl_reveal_urn }}</p>
+        <div class="risk-reveal-legend">
+            <span><i class="risk-reveal-swatch high"></i>{{ mpl_reveal_high }}</span>
+            <span><i class="risk-reveal-swatch low"></i>{{ mpl_reveal_low }}</span>
+        </div>
+        <div id="mpl-ball-urn" class="mpl-ball-urn" aria-label="{{ mpl_reveal_urn }}">
+            {% for ball in mpl_ball_numbers %}
+            <span id="mpl-ball-{{ ball }}" class="mpl-ball {% if ball <= mpl_row %}high{% else %}low{% endif %}" style="--ball-index: {{ ball }}">{{ ball }}</span>
+            {% endfor %}
+        </div>
+        <div id="mpl-drawn-ball" class="mpl-drawn-ball" aria-live="polite"></div>
+        <p id="mpl-reveal-wait" class="risk-reveal-wait">{{ t.reveal_wait }}</p>
+        <div id="mpl-reveal-result" class="risk-reveal-result" aria-live="polite" hidden>
+            <p>{{ mpl_reveal_drawn }}</p>
+            <p><strong>{{ mpl_payoff_text }}</strong></p>
+            <p><strong>{{ t.risk_type_label }}: {{ mpl_risk_type }}</strong></p>
+            <p>{{ mpl_behavior_feedback }}</p>
+        </div>
+    </section>
+
+    <section class="risk-reveal-panel" aria-labelledby="bret-reveal-heading">
+        <h3 id="bret-reveal-heading">{{ t.bret_reveal_title }}</h3>
+        <p>{{ bret_decided_cards }}</p>
+        <div class="bret-grid-scroll">
+            <div class="cards-container bret-display-grid bret-reveal-grid">
+                {% for card in bret_cards %}
+                <div class="card" id="bret-card-{{ card }}">
+                    <div class="card-inner">
+                        <div class="card-front centered">
+                            <img src="{% static 'RISK_PREFS/card_back.png' %}" alt="{{ t.card_back_alt }}" width="75" height="90">
+                        </div>
+                        <div class="card-back centered">
+                            {% if card == bomb_position %}
+                            <img src="{% static 'RISK_PREFS/bomb.png' %}" alt="{{ t.bomb_alt }}" width="75" height="80">
+                            {% else %}
+                            <img src="{% static 'RISK_PREFS/smiley.png' %}" alt="{{ t.smiley_alt }}" data-safe-card width="75" height="80">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <p id="bret-reveal-wait" class="risk-reveal-wait">{{ t.reveal_wait }}</p>
+        <div id="bret-reveal-result" class="risk-reveal-result" aria-live="polite" hidden>
+            <p><strong>{{ bret_result_text }}</strong></p>
+            <p><strong>{{ t.risk_type_label }}: {{ bret_risk_type }}</strong></p>
+            <p>{{ bret_behavior_feedback }}</p>
+        </div>
+    </section>
+
+    <section class="risk-reveal-panel" aria-labelledby="investment-reveal-heading">
+        <h3 id="investment-reveal-heading">{{ t.investment_reveal_title }}</h3>
+        <p>{{ investment_chosen }}</p>
+        <div class="investment-wheel-stage" role="img" aria-label="{{ t.investment_reveal_low }}; {{ t.investment_reveal_high }}">
+            <div class="investment-wheel-pointer"></div>
+            <div id="investment-wheel" class="investment-wheel">
+                <span class="investment-wheel-label low">2/3</span>
+                <span class="investment-wheel-label high">1/3</span>
+            </div>
+        </div>
+        <div class="risk-reveal-legend">
+            <span><i class="risk-reveal-swatch low"></i>{{ t.investment_reveal_low }}</span>
+            <span><i class="risk-reveal-swatch high"></i>{{ t.investment_reveal_high }}</span>
+        </div>
+        <p id="investment-reveal-wait" class="risk-reveal-wait">{{ t.reveal_wait }}</p>
+        <div id="investment-reveal-result" class="risk-reveal-result" aria-live="polite" hidden>
+            <p>{{ investment_result_text }}</p>
+            <p><strong>{{ investment_payoff_text }}</strong></p>
+            <p><strong>{{ t.risk_type_label }}: {{ investment_risk_type }}</strong></p>
+            <p>{{ investment_behavior_feedback }}</p>
+        </div>
+    </section>
+
+    <div id="summary-final-feedback" hidden>
+        <hr>
+        <p><strong>{{ total_payoff_text }}</strong></p>
+        <div class="feedback-block overall-profile-block">
+            {% if overall_profile %}
+            <p><strong>{{ t.overall_profile_label }}: {{ overall_profile }}</strong></p>
+            {% else %}
+            <p>{{ t.overall_profile_unavailable }}</p>
+            {% endif %}
+        </div>
+        {% if ai_individual_feedback_html %}
+        <div class="feedback-block ai-feedback-block">
+            <h3>{{ t.ai_individual_title }}</h3>
+            <div>{{ ai_individual_feedback_html|safe }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="summary-next" hidden>{{ next_button }}</div>
+<audio id="bomb-sound" src="{% static 'RISK_PREFS/bomb_sound.mp3' %}" preload="auto"></audio>
+<noscript><style>.risk-reveal-panel [hidden], #summary-final-feedback[hidden], #summary-next[hidden] { display: block !important; }</style></noscript>
+{{ endblock }}
+
+{{ block scripts }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const finished = { mpl: false, bret: false, investment: false };
+
+    function reveal(task) {
+        document.getElementById(task + '-reveal-wait').hidden = true;
+        document.getElementById(task + '-reveal-result').hidden = false;
+        finished[task] = true;
+        if (Object.values(finished).every(Boolean)) {
+            document.getElementById('summary-final-feedback').hidden = false;
+            document.getElementById('summary-next').hidden = false;
+        }
+    }
+
+    const urn = document.getElementById('mpl-ball-urn');
+    const drawnBall = document.getElementById('mpl-ball-{{ mpl_drawn }}');
+    function finishMpl() {
+        urn.classList.remove('is-drawing');
+        document.getElementById('mpl-drawn-ball').appendChild(drawnBall);
+        if (reducedMotion) reveal('mpl');
+        else setTimeout(() => reveal('mpl'), 550);
+    }
+    if (reducedMotion) finishMpl();
+    else {
+        urn.classList.add('is-drawing');
+        setTimeout(finishMpl, 1900);
+    }
+
+    const bretCards = document.querySelectorAll('.bret-reveal-grid .card');
+    const selectedBretCards = {{ selected_bret_cards_json|safe }};
+    const bombPosition = {{ bomb_position }};
+    let flipped = 0;
+    function flipNextCard() {
+        if (flipped >= selectedBretCards.length) {
+            reveal('bret');
+            return;
+        }
+        const cardNumber = selectedBretCards[flipped];
+        const card = bretCards[cardNumber - 1];
+        card.classList.add('flipped');
+        flipped += 1;
+        if (cardNumber === bombPosition) {
+            if (!reducedMotion) {
+                const playback = document.getElementById('bomb-sound').play();
+                if (playback && playback.catch) playback.catch(() => {});
+            }
+            document.querySelectorAll('.bret-reveal-grid .card-back img[data-safe-card]').forEach((img) => {
+                img.src = "{% static 'RISK_PREFS/unhappy.png' %}";
+                img.alt = {{ t.unhappy_alt|json }};
+            });
+            if (reducedMotion) reveal('bret');
+            else setTimeout(() => reveal('bret'), 350);
+            return;
+        }
+        if (reducedMotion) flipNextCard();
+        else setTimeout(flipNextCard, 190);
+    }
+    flipNextCard();
+
+    const wheel = document.getElementById('investment-wheel');
+    const investmentDraw = {{ investment_draw }};
+    const targetAngle = investmentDraw === 1 ? 60 : investmentDraw === 2 ? 300 : 180;
+    if (reducedMotion) {
+        wheel.style.transform = `rotate(${targetAngle}deg)`;
+        reveal('investment');
+    } else {
+        setTimeout(() => { wheel.style.transform = `rotate(${1800 + targetAngle}deg)`; }, 100);
+        setTimeout(() => reveal('investment'), 3500);
+    }
+});
+</script>
+{{ endblock }}

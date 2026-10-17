@@ -22,7 +22,7 @@ Feedback is provided to participants after each round, and the game can be repea
 class Constants(BaseConstants):
     name_in_url = 'PGG'
     players_per_group = 3
-    num_rounds = 3
+    num_rounds = 10
     endowment = cu(100)
     multiplier = 2
 
@@ -33,6 +33,7 @@ TEXTS = {
     'it': dict(
         language_name='Italian',
         instructions_title='Istruzioni',
+        instructions_toggle='Rivedi le istruzioni',
         interaction_heading="L'interazione",
         instructions_group_prefix='In questo studio, farai parte di un gruppo formato da',
         participants='partecipanti',
@@ -41,6 +42,10 @@ TEXTS = {
         endowment_suffix='(E).',
         contribution_decision='Ogni partecipante nel gruppo decide quanto contribuire a un progetto comune.',
         contribution_range_prefix='I contributi possono essere qualsiasi numero intero tra 0 e',
+        choice_heading='La tua scelta',
+        rounds_heading='I round',
+        fact_endowment='dotazione ciascuno',
+        fact_rounds='round',
         earnings_heading='Il tuo guadagno',
         pgg_schema_alt='Schema del gioco dei beni pubblici',
         earnings_intro='I guadagni dal progetto sono calcolati come segue:',
@@ -51,6 +56,27 @@ TEXTS = {
         split_prefix='I guadagni totali dal progetto sono quindi divisi equamente tra tutti i',
         split_suffix='partecipanti: questi sono i tuoi guadagni dal progetto (R).',
         payoff_rule='Il tuo guadagno è dato dai tuoi guadagni dal progetto più l\'importo che non hai contribuito.',
+        payoff_formula_heading='La regola del guadagno',
+        payoff_formula_intro='In ogni round, il tuo guadagno si calcola così:',
+        payoff_formula_accessible='Guadagno uguale alla dotazione meno il proprio contributo più il totale dei contributi, moltiplicato per il fattore del progetto e diviso per il numero di partecipanti.',
+        payoff_formula_payoff='Il tuo guadagno',
+        payoff_formula_you='tu',
+        payoff_formula_endowment='è la tua dotazione',
+        payoff_formula_contribution='è il tuo contributo',
+        payoff_formula_total='sono i contributi di tutto il gruppo',
+        simulator_kicker='Prova un esempio',
+        simulator_heading='Simulatore di guadagno',
+        simulator_intro='Muovi i cursori per vedere come le scelte del gruppo cambiano il tuo guadagno.',
+        simulator_you='Tu contribuisci',
+        simulator_other_one='Partecipante 2 contribuisce',
+        simulator_other_two='Partecipante 3 contribuisce',
+        simulator_total_contributions='Contributi al progetto',
+        simulator_after_multiplier='Guadagni del progetto',
+        simulator_each_gets='Ciascuno riceve',
+        simulator_you_keep='Tu tieni',
+        simulator_your_share='La tua quota',
+        simulator_your_payoff='Il tuo guadagno',
+        simulator_hint='Questo esempio è solo illustrativo e non modifica la tua scelta.',
         repetitions_prefix='Parteciperai a',
         repetitions_mid='round durante i quali ripeterai la medesima scelta e sarai associato agli stessi altri',
         repetitions_suffix='partecipanti.',
@@ -60,6 +86,7 @@ TEXTS = {
         of='di',
         choice_label='Quanto contribuisci al progetto comune?',
         integer_hint_prefix='Un numero intero tra 0 e',
+        integer_error='Inserisci un numero intero.',
         results_title='Risultati',
         this_round='Questo round',
         you_contributed='Hai contribuito al progetto:',
@@ -116,6 +143,7 @@ TEXTS = {
     'en': dict(
         language_name='English',
         instructions_title='Instructions',
+        instructions_toggle='Review instructions',
         interaction_heading='The interaction',
         instructions_group_prefix='In this study, you will be part of a group of',
         participants='participants',
@@ -124,6 +152,10 @@ TEXTS = {
         endowment_suffix='(E).',
         contribution_decision='Each participant in the group decides how much to contribute to a common project.',
         contribution_range_prefix='Contributions can be any integer between 0 and',
+        choice_heading='Your choice',
+        rounds_heading='The rounds',
+        fact_endowment='endowment each',
+        fact_rounds='rounds',
         earnings_heading='Your payoff',
         pgg_schema_alt='Public goods game diagram',
         earnings_intro='Earnings from the project are calculated as follows:',
@@ -134,6 +166,27 @@ TEXTS = {
         split_prefix='The total earnings from the project are then divided equally among all',
         split_suffix='participants: these are your earnings from the project (R).',
         payoff_rule='Your payoff is given by your earnings from the project plus the amount you did not contribute.',
+        payoff_formula_heading='The payoff rule',
+        payoff_formula_intro='In each round, your payoff is calculated as follows:',
+        payoff_formula_accessible='Payoff equals the endowment minus your contribution, plus total contributions multiplied by the project factor and divided by the number of participants.',
+        payoff_formula_payoff='Your payoff',
+        payoff_formula_you='you',
+        payoff_formula_endowment='is your endowment',
+        payoff_formula_contribution='is your contribution',
+        payoff_formula_total='is the sum of everyone’s contributions',
+        simulator_kicker='Try an example',
+        simulator_heading='Payoff Simulator',
+        simulator_intro='Move the sliders to see how the group’s choices change your payoff.',
+        simulator_you='You contribute',
+        simulator_other_one='Participant 2 contributes',
+        simulator_other_two='Participant 3 contributes',
+        simulator_total_contributions='Contributions to the project',
+        simulator_after_multiplier='Project earnings',
+        simulator_each_gets='Each person receives',
+        simulator_you_keep='You keep',
+        simulator_your_share='Your share',
+        simulator_your_payoff='Your payoff',
+        simulator_hint='This example is only illustrative and does not change your choice.',
         repetitions_prefix='You will take part in',
         repetitions_mid='rounds in which you will repeat the same choice and be matched with the same other',
         repetitions_suffix='participants.',
@@ -143,6 +196,7 @@ TEXTS = {
         of='of',
         choice_label='How much do you contribute to the common project?',
         integer_hint_prefix='An integer between 0 and',
+        integer_error='Please enter a whole number.',
         results_title='Results',
         this_round='This round',
         you_contributed='You contributed to the project:',
@@ -225,7 +279,7 @@ class Group(BaseGroup):
 
 
 class Player(BasePlayer):
-    choice = models.CurrencyField(min=0, max=Constants.endowment)  #ì
+    choice = models.CurrencyField(min=0, max=Constants.endowment)
     payoff_final = models.CurrencyField()
     # to store final payoff
 
@@ -516,6 +570,11 @@ def _pgg_ai_commentary(session, data):
     return html
 
 
+def _ai_commentary_enabled(session):
+    """Return True only when a session explicitly opts in to AI commentary."""
+    return (session.config or {}).get("enable_ai_commentary") is True
+
+
 def _participant_id(player: Player):
     return (
         getattr(player, 'label', None)
@@ -681,7 +740,11 @@ def vars_for_admin_report(subsession: Subsession):
         round_labels=list(range(1, Constants.num_rounds + 1)),
         chart_text=get_text(session),
     )
-    report_data["ai_commentary_html"] = _pgg_ai_commentary(session, report_data)
+    report_data["ai_commentary_html"] = (
+        _pgg_ai_commentary(session, report_data)
+        if _ai_commentary_enabled(session)
+        else ""
+    )
     return report_data
 
 
@@ -697,6 +760,7 @@ class Instructions(Page):
             **common_template_vars(player),
             'other_players': Constants.players_per_group - 1,
             'common_proj': Constants.endowment * Constants.players_per_group,
+            'endowment_number': float(Constants.endowment),
         }
 
 class Contribute(Page):
@@ -704,11 +768,19 @@ class Contribute(Page):
     form_fields = ['choice']
     # the player will fill out the field choice and it will be saved in player model (see models)
     @staticmethod
+    def error_message(player: Player, values):
+        choice = values['choice']
+        if choice != int(choice):
+            return get_text(player)['integer_error']
+
+    @staticmethod
     def vars_for_template(player: Player):
         return {
             **common_template_vars(player),
             'round_number': player.round_number,
             'endowment': Constants.endowment,
+            'endowment_number': float(Constants.endowment),
+            'other_players': Constants.players_per_group - 1,
         }
 
 

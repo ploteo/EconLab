@@ -1,0 +1,27 @@
+{{ load staticfiles otree }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+{{ endblock }}
+
+{{ block content }}
+
+<div class="otree-card risk-card">
+    <h2>{{ t.bret_instructions_title }}</h2>
+    <p>{{ t.bret_instructions_intro }}</p>
+    <p>{{ bret_fixed_amount }}</p>
+
+    <h2>{{ t.bret_rules_title }}</h2>
+    <ul>
+        <li>{{ bret_rule_zero }}</li>
+        <li>{{ bret_rule_bomb }}</li>
+        <li>{{ bret_rule_safe }}</li>
+    </ul>
+
+    <p>{{ t.continue_to_start }}</p>
+</div>
+
+{{ next_button }}
+
+{{ endblock }}

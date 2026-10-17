@@ -5,81 +5,438 @@
 {{ endblock }}
 
 {{ block content }}
-<div class="card">
-    <!-- <p>Ecco i numeri riportati:</p>
-
-    <p>
-        {{ sorted_guesses }}
-    </p> -->
-    <p>
-        {{ t.average }}: {{ average }}
-    </p>
-    <p>
-        {{ t.target_value }}: {{ target_value }}
-       
-    </p>
-    <p>
-        {{ t.closest_number }}: {{ group.best_guess }}
-    </p>
-
- {{if player.guess != -99}} 
-
-    <p>{{ t.your_number_was }} {{ player.guess }}</p>
-
-{{else }}
-
-<p>{{ t.did_not_participate }}</p>
-
-{{ endif }}
-
-    <p>
-        {{ if player.is_winner }}
-            {{ if group.num_winners > 1 }}
-                {{ t.congratulations }} <span class="iconify" data-icon="bi:emoji-smile" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
-! {{ t.you_are_one_of }} {{ group.num_winners }} {{ t.participants_with_winning_number }}
+<main class="result-page">
+    <section class="result-summary" aria-label="{{ t.results_title }}">
+        <div class="result-summary-heading">
+            <p class="result-overline">{{ t.results_title }}</p>
+            {{ if player.is_winner }}
+                <div class="result-status result-status--winner">
+                    <span class="result-status-icon" aria-hidden="true">✓</span>
+                    <div>
+                        <strong>{{ t.congratulations }}!</strong>
+                        {{ if group.num_winners > 1 }}
+                            <span>{{ t.you_are_one_of }} {{ group.num_winners }} {{ t.participants_with_winning_number }}</span>
+                        {{ else }}
+                            <span>{{ t.you_won }}</span>
+                        {{ endif }}
+                    </div>
+                </div>
             {{ else }}
-                {{ t.congratulations }} <span class="iconify" data-icon="bi:emoji-smile" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
-! {{ t.you_won }}
+                <div class="result-status result-status--neutral">
+                    <span class="result-status-icon" aria-hidden="true">↗</span>
+                    <div><strong>{{ t.you_lost }}</strong></div>
+                </div>
             {{ endif }}
-        {{ else }}
-            {{ t.you_lost }} <span class="iconify" data-icon="fluent:emoji-sad-24-regular" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
-
-        {{ endif }}
-    </p>
-</div>
-<br>
-    <div class="container" style="font-size:18pt">
-      <div class="row">
-        &nbsp;
-      </div>
-      <div class="row" style="padding-left:135px;">
-        <div class="col-md-10">
-
         </div>
-        <div class="col-md-2">
-          <button name="btn_submit" value="True" class="btn btn-primary btn-large">
-             <span style="font-size:16pt">{{ t.finish }}</span>
-         </button>
+
+        <div class="result-metrics">
+            <div class="result-metric">
+                <span class="result-metric-label">{{ t.average }}</span>
+                <strong>{{ average }}</strong>
+            </div>
+            <div class="result-metric">
+                <span class="result-metric-label">{{ t.target_value }}</span>
+                <strong>{{ target_value }}</strong>
+            </div>
+            <div class="result-metric result-metric--winning">
+                <span class="result-metric-label">{{ t.winning_value }}</span>
+                <strong>{{ winning_value }}</strong>
+            </div>
+            <div class="result-metric result-metric--yours">
+                <span class="result-metric-label">{{ t.your_choice }}</span>
+                {{ if player.guess != -99 }}
+                    <strong>{{ player.guess }}</strong>
+                {{ else }}
+                    <strong>—</strong>
+                {{ endif }}
+            </div>
         </div>
-      </div>
+    </section>
+
+    {{ if histogram_values }}
+    <section class="result-card result-chart-card">
+        <div class="result-card-heading">
+            <h3>{{ t.choice_distribution }}</h3>
+            <p>{{ t.choice_distribution_intro }}</p>
+        </div>
+        <div class="result-chart-key" aria-label="Chart legend">
+            <span><i class="chart-key chart-key-winning"></i>{{ t.winning_value }}: <strong>{{ winning_value }}</strong></span>
+            {{ if player.guess != -99 }}
+                <span><i class="chart-key chart-key-player"></i>{{ t.your_choice }}: <strong>{{ player.guess }}</strong></span>
+            {{ endif }}
+            <span><i class="chart-key chart-key-target"></i>{{ t.target_marker }}: <strong>{{ target_value }}</strong></span>
+        </div>
+        <div class="result-chart-wrap">
+            <canvas id="choiceHistogram" role="img" aria-label="{{ t.choice_distribution }}"></canvas>
+        </div>
+    </section>
+    {{ endif }}
+
+    {{ if participant_feedback_html }}
+    <section class="result-card participant-feedback">
+        <div class="result-card-heading">
+            <h3>{{ t.participant_feedback_title }}</h3>
+        </div>
+        <div class="participant-feedback-body">
+            {{ participant_feedback_html|safe }}
+        </div>
+    </section>
+    {{ endif }}
+
+    <div class="result-actions">
+        <button name="btn_submit" value="True" class="btn result-continue-button">
+            {{ t.finish }} <span aria-hidden="true">→</span>
+        </button>
     </div>
+</main>
 
 
 {{ endblock }}
 
 {{ block styles }}
-    <style>
-        .btn-primary {
-            background-color: #005466;
-            /*formatting goes here*/
-        }
-    </style>
-<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<style>
+    .result-page {
+        --result-ink: #173b45;
+        --result-accent: #006b7c;
+        --result-surface: #ffffff;
+        --result-muted: #5d6d75;
+        --result-line: #dce8eb;
+        --result-soft: #edf8f8;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 0 1.5rem;
+    }
+
+    .result-summary,
+    .result-card {
+        border: 1px solid var(--result-line);
+        box-shadow: 0 10px 28px rgba(20, 65, 76, 0.08);
+    }
+
+    .result-summary {
+        color: var(--result-ink);
+        background: linear-gradient(135deg, #effafa 0%, #ffffff 65%);
+        border-radius: 22px;
+        padding: 1.25rem;
+    }
+
+    .result-summary-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .result-overline {
+        color: var(--result-accent);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .result-status {
+        align-items: center;
+        border-radius: 14px;
+        display: flex;
+        font-size: 0.88rem;
+        gap: 0.55rem;
+        line-height: 1.35;
+        max-width: 440px;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .result-status strong,
+    .result-status span { display: block; }
+    .result-status--winner { background: #eaf8ef; color: #17623a; }
+    .result-status--neutral { background: #f2f5f6; color: #46585f; }
+
+    .result-status-icon {
+        align-items: center;
+        background: currentColor;
+        border-radius: 50%;
+        color: #fff;
+        display: inline-flex !important;
+        flex: 0 0 1.4rem;
+        font-size: 0.85rem;
+        font-weight: 800;
+        height: 1.4rem;
+        justify-content: center;
+        width: 1.4rem;
+    }
+
+    .result-status--winner .result-status-icon { background: #23864d; }
+    .result-status--neutral .result-status-icon { background: #6b7e86; }
+
+    .result-metrics {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .result-metric {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid #dcebed;
+        border-radius: 14px;
+        min-width: 0;
+        padding: 0.75rem 0.65rem;
+    }
+
+    .result-metric-label {
+        color: var(--result-muted);
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 0.28rem;
+        text-transform: uppercase;
+    }
+
+    .result-metric strong {
+        color: var(--result-ink);
+        display: block;
+        font-size: clamp(1.25rem, 5vw, 1.7rem);
+        line-height: 1.05;
+        overflow-wrap: anywhere;
+    }
+
+    .result-metric--winning { border-color: #9fd7b2; }
+    .result-metric--winning strong { color: #17623a; }
+    .result-metric--yours { border: 2px solid #dc2626; padding: calc(0.75rem - 1px) calc(0.65rem - 1px); }
+    .result-metric--yours strong { color: #b91c1c; }
+
+    .result-card {
+        background: var(--result-surface);
+        border-radius: 20px;
+        margin-top: 1rem;
+        padding: 1.1rem;
+    }
+
+    .result-card-heading h3 {
+        color: var(--result-ink);
+        font-size: 1.12rem;
+        font-weight: 750;
+        margin: 0;
+    }
+
+    .result-card-heading p {
+        color: var(--result-muted);
+        font-size: 0.92rem;
+        line-height: 1.45;
+        margin: 0.35rem 0 0;
+    }
+
+    .result-chart-key {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 1rem 0;
+    }
+
+    .result-chart-key > span {
+        align-items: center;
+        background: #f7fafb;
+        border: 1px solid #e5eef0;
+        border-radius: 10px;
+        color: #38535c;
+        display: flex;
+        font-size: 0.78rem;
+        gap: 0.28rem;
+        line-height: 1.25;
+        min-width: 0;
+        padding: 0.5rem;
+    }
+
+    .result-chart-key strong { color: var(--result-ink); }
+
+    .chart-key {
+        display: inline-block;
+        flex: 0 0 auto;
+        height: 0.85rem;
+        margin-right: 0.12rem;
+        width: 0.85rem;
+    }
+
+    .chart-key-winning { background: #2e7d32; border-radius: 3px; }
+    .chart-key-player { background: #fee2e2; border: 3px solid #dc2626; border-radius: 3px; }
+    .chart-key-target {
+        border-top: 3px dashed #d97706;
+        height: 0;
+        margin-top: 0.1rem;
+        width: 1rem;
+    }
+
+    .result-chart-wrap { height: clamp(220px, 48vw, 300px); position: relative; }
+
+    .participant-feedback { border-top: 4px solid var(--result-accent); }
+    .participant-feedback-body { color: #334d56; font-size: 0.97rem; line-height: 1.55; }
+    .participant-feedback-body p { margin: 0.85rem 0; }
+    .participant-feedback-body p:first-child { margin-top: 0.7rem; }
+    .participant-feedback-body h4 { color: var(--result-ink); font-size: 1rem; margin: 1.1rem 0 0.4rem; }
+    .participant-feedback-body ul { margin: 0.25rem 0 0; padding-left: 1.25rem; }
+    .participant-feedback-body li { margin-bottom: 0.45rem; }
+
+    .result-actions { margin-top: 1rem; }
+    .result-continue-button {
+        align-items: center;
+        background: var(--result-accent) !important;
+        border: 2px solid var(--result-accent) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 18px rgba(0, 107, 124, 0.22) !important;
+        color: #fff !important;
+        display: flex;
+        font-size: 1rem !important;
+        font-weight: 750 !important;
+        justify-content: center;
+        margin: 0 !important;
+        min-height: 52px;
+        padding: 0.75rem 1rem !important;
+        width: 100%;
+    }
+
+    .result-continue-button:hover,
+    .result-continue-button:focus { background: #005563 !important; border-color: #005563 !important; }
+    .result-continue-button:focus-visible { outline: 3px solid #8ad0d9; outline-offset: 3px; }
+
+    @media (max-width: 600px) {
+        .result-page { padding-bottom: 1rem; }
+        .result-summary { border-radius: 18px; padding: 1rem; }
+        .result-summary-heading { align-items: stretch; flex-direction: column; margin-bottom: 1rem; }
+        .result-status { max-width: none; }
+        .result-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .result-metric { min-height: 82px; padding: 0.7rem; }
+        .result-card { border-radius: 16px; padding: 1rem; }
+        .result-chart-key { grid-template-columns: 1fr; }
+        .result-chart-key > span { font-size: 0.82rem; padding: 0.55rem 0.6rem; }
+        .result-chart-wrap { height: 235px; }
+    }
+</style>
+<link rel="stylesheet" href="{% static 'beauty_contest.css' %}">
 
 
 {{ endblock }}
 
 {{block scripts}}
 <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+{{ if histogram_values }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function () {
+        const values = {{ histogram_values|json }};
+        const winningValue = {{ winning_value|json }};
+        const playerValue = {{ player_guess_for_chart|json }};
+        const targetValue = {{ target_value|json }};
+        const text = {{ t|json }};
+        const maxGuess = {{ C.GUESS_MAX }};
+        const binSize = 5;
+        const binCount = Math.ceil((maxGuess + 1) / binSize);
+        const bins = new Array(binCount).fill(0);
+
+        values.forEach(function (value) {
+            bins[Math.min(binCount - 1, Math.floor(value / binSize))] += 1;
+        });
+
+        const labels = bins.map(function (_, index) {
+            const start = index * binSize;
+            const end = Math.min(maxGuess, start + binSize - 1);
+            return start + '–' + end;
+        });
+        const winningBin = Math.min(binCount - 1, Math.floor(winningValue / binSize));
+        const playerBin = playerValue === null
+            ? null
+            : Math.min(binCount - 1, Math.floor(playerValue / binSize));
+
+        // A small local plugin marks the exact target, even when it lies inside a bin.
+        const targetMarker = {
+            id: 'targetMarker',
+            afterDatasetsDraw: function (chart, args, options) {
+                const area = chart.chartArea;
+                const xScale = chart.scales.x;
+                const firstBinCenter = xScale.getPixelForValue(0);
+                const lastBinCenter = xScale.getPixelForValue(chart.data.labels.length - 1);
+                const x = firstBinCenter + (Math.max(0, Math.min(options.max, options.value)) / options.max) * (lastBinCenter - firstBinCenter);
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(x, area.top);
+                ctx.lineTo(x, area.bottom);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#9a5b05';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(text.target_marker, Math.min(x + 4, area.right - 75), area.top + 14);
+                ctx.restore();
+            }
+        };
+
+        const canvas = document.getElementById('choiceHistogram');
+        if (!canvas) return;
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: text.histogram_participants,
+                    data: bins,
+                    backgroundColor: bins.map(function (_, index) {
+                        return index === winningBin ? 'rgba(46, 125, 50, 0.78)' : 'rgba(69, 139, 180, 0.62)';
+                    }),
+                    borderColor: bins.map(function (_, index) {
+                        if (index === playerBin) return '#dc2626';
+                        return index === winningBin ? '#1b5e20' : 'rgba(30, 64, 175, 0.9)';
+                    }),
+                    borderWidth: bins.map(function (_, index) { return index === playerBin ? 3 : 1; }),
+                    borderRadius: 5,
+                    maxBarThickness: 28,
+                }]
+            },
+            plugins: [targetMarker],
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                interaction: { intersect: false, mode: 'index' },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        title: { display: true, text: text.histogram_guess_interval, color: '#52616b', font: { weight: '600' } },
+                        ticks: {
+                            autoSkip: true,
+                            color: '#52616b',
+                            font: { size: 11 },
+                            maxRotation: 0,
+                            maxTicksLimit: window.matchMedia('(max-width: 600px)').matches ? 5 : 11,
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        border: { display: false },
+                        grid: { color: 'rgba(82, 97, 107, 0.12)' },
+                        title: { display: true, text: text.histogram_participants_axis, color: '#52616b', font: { weight: '600' } },
+                        ticks: { color: '#52616b', precision: 0 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    targetMarker: { value: targetValue, max: maxGuess },
+                    tooltip: {
+                        backgroundColor: '#173b45',
+                        cornerRadius: 8,
+                        displayColors: false,
+                        padding: 10,
+                        callbacks: {
+                            title: function (items) { return text.histogram_guess_interval + ': ' + items[0].label; }
+                        }
+                    }
+                }
+            }
+        });
+    })();
+</script>
+{{ endif }}
 
 {{ endblock }}

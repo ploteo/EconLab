@@ -1,0 +1,23 @@
+# Python / oTree cache & environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.env
+__temp*
+_static_root/
+staticfiles/
+_bots*
+
+# Local databases & archives (never commit participant/session data)
+db.sqlite3
+*.sqlite3
+*.otreezip
+
+# OS / Editor files
+.DS_Store
+.idea/
+.vscode/
+*~
+

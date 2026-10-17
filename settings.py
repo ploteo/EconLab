@@ -1,15 +1,49 @@
 from os import environ
 
 SESSION_CONFIGS = [
-
     dict(
-        name='beauty_contest_ita',
-         display_name = 'Beauty Contest (ITA)',
+        name='market_ita',
+        display_name='Market (ITA)',
+        app_sequence=['Market'],
+        num_demo_participants=7,
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_market_model='gpt-5.4-mini',
+        # AI commentary is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_commentary=False,
+        language='it', #'it' for italian, 'en' for english
+    ),
+    dict(
+        name='market_eng',
+        display_name='Market (ENG)',
+        app_sequence=['Market'],
+        num_demo_participants=7,
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_market_model='gpt-5.4-mini',
+        # AI commentary is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_commentary=False,
+        language='en',
+    ),
+    dict(
+        name='beauty_contest_eng',
+        display_name='Beauty Contest (ENG)',
         app_sequence=['BEAUTY_CONTEST'],
         num_demo_participants=6,
         openai_api_key=environ.get('OPENAI_API_KEY'),
         openai_beauty_model='gpt-5.4-mini',
-        language='it', #'it' for italian, 'en' for english
+        # AI commentary is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_commentary=True,
+        language='en',  # 'it' for italian, 'en' for english
+    ),
+    dict(
+        name='beauty_contest_ita',
+        display_name='Beauty Contest (ITA)',
+        app_sequence=['BEAUTY_CONTEST'],
+        num_demo_participants=6,
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_beauty_model='gpt-5.4-mini',
+        # AI commentary is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_commentary=False,
+        language='it',  # 'it' for italian, 'en' for english
     ),
     dict(
         name='public_goods_ita',
@@ -17,8 +51,10 @@ SESSION_CONFIGS = [
         app_sequence=['PGG'],
         num_demo_participants=3,
         openai_api_key=environ.get('OPENAI_API_KEY'),
-        openai_pgg_model='gpt-5.4-mini', #gpt-5.5, 'gpt-5.4'
-        language='it', #'it' for italian, 'en' for english
+        openai_pgg_model='gpt-5.4-mini',
+        # AI commentary is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_commentary=False,
+        language='it',  # 'it' for italian, 'en' for english
     ),
     dict(
         name='public_goods_eng',
@@ -26,8 +62,32 @@ SESSION_CONFIGS = [
         app_sequence=['PGG'],
         num_demo_participants=3,
         openai_api_key=environ.get('OPENAI_API_KEY'),
-        openai_pgg_model='gpt-5.4-mini', #gpt-5.5, 'gpt-5.4'
+        openai_pgg_model='gpt-5.4-mini',
+        # AI commentary is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_commentary=True,
         language='en',
+    ),
+    dict(
+        name='Risk_Prefs_Random_Order',
+        display_name='Risk Preferences Random Order (ENG)',
+        app_sequence=['RISK_PREFS'],
+        num_demo_participants=3,
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_risk_prefs_model='gpt-5.4-mini',
+        # AI feedback is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_feedback=True,
+        language='en',
+    ),
+    dict(
+        name='Risk_Prefs_Random_Order_ITA',
+        display_name='Risk Preferences Random Order (ITA)',
+        app_sequence=['RISK_PREFS'],
+        num_demo_participants=3,
+        openai_api_key=environ.get('OPENAI_API_KEY'),
+        openai_risk_prefs_model='gpt-5.4-mini',
+        # AI feedback is opt-in. Normal classroom sessions make no API calls.
+        enable_ai_feedback=False,
+        language='it',
     ),
 ]
 
@@ -50,6 +110,7 @@ LANGUAGE_CODE = 'en'
 # e.g. EUR, GBP, CNY, JPY
 REAL_WORLD_CURRENCY_CODE = 'USD'
 USE_POINTS = True
+POINTS_DECIMAL_PLACES = 1
 
 ADMIN_USERNAME = 'admin'
 # for security, best to set admin password in an environment variable

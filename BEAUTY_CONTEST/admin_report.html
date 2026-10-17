@@ -1,131 +1,449 @@
-
 {% load otree %}
 
-<h2>{{ t.admin_report_title }} ({{ t.admin_round }} {{ round_number }})</h2>
-
-<h3>{{ t.guess_distribution }}</h3>
+<main class="admin-report">
 {% if guess_values %}
-<div style="max-width: 900px;">
-    <canvas id="guessHistogram" width="900" height="360" style="width: 100%;"></canvas>
-</div>
-{% else %}
-<p>{{ t.no_guesses_histogram }}</p>
-{% endif %}
+    <section class="result-summary admin-summary" aria-label="{{ t.admin_report_title }}">
+        <div class="result-summary-heading admin-report-header">
+            <div>
+                <p class="result-overline">Beauty Contest</p>
+                <h2 class="admin-title">{{ t.admin_report_title }}</h2>
+            </div>
+            <span class="admin-round-pill">{{ t.admin_round }} {{ round_number }}</span>
+        </div>
 
-{% if ai_commentary_html %}
-<div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 1rem; margin: 1.25rem 0; background: #f6f8fa;">
-    <h3 style="margin-top: 0;">{{ t.ai_commentary_title }}</h3>
-    <div style="line-height: 1.5;">
-        {{ ai_commentary_html|safe }}
-    </div>
-</div>
-{% endif %}
+        <div class="result-metrics admin-metrics-grid">
+            <div class="result-metric">
+                <span class="result-metric-label">{{ t.average }} (M)</span>
+                <strong>{{ average_value }}</strong>
+            </div>
+            <div class="result-metric">
+                <span class="result-metric-label">{{ t.target_value }} (W)</span>
+                <strong>{{ target_value }}</strong>
+            </div>
+            <div class="result-metric result-metric--winning">
+                <span class="result-metric-label">{{ t.winning_value }}</span>
+                <strong>{{ winning_value }}</strong>
+            </div>
+            <div class="result-metric">
+                <span class="result-metric-label">{{ t.histogram_participants }}</span>
+                <strong>{{ num_guesses }}</strong>
+            </div>
+        </div>
+    </section>
 
-<h3>{{ t.group_statistics }}</h3>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>{{ t.group_id }}</th>
-            <th>{{ multiplier_label }} {{ t.average }}</th>
-            <th>{{ t.best_guess }}</th>
-            <th>{{ t.winners_count }}</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for g in group_stats %}
-        <tr>
-            <td>{{ g.group_id }}</td>
-            <td>
-                {% if g.target_value %}{{ g.target_value }}{% else %}—{% endif %}
-            </td>
-            <td>
-                {% if g.best_guess %}{{ g.best_guess }}{% else %}—{% endif %}
-            </td>
-            <td>
-                {% if g.num_winners %}{{ g.num_winners }}{% else %}—{% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <section class="result-card admin-chart-card">
+        <div class="result-card-heading">
+            <h3>{{ t.guess_distribution }}</h3>
+        </div>
 
+        <div class="result-chart-key admin-chart-key" aria-label="Chart legend">
+            <span><i class="chart-key chart-key-winning"></i>{{ t.winning_value }}: <strong>{{ winning_value }}</strong></span>
+            <span><i class="chart-key chart-key-target"></i>{{ t.target_marker }}: <strong>{{ target_value }}</strong></span>
+            <span><i class="chart-key chart-key-count"></i>{{ t.histogram_participants }}: <strong>{{ num_guesses }}</strong></span>
+        </div>
 
-{% if rows %}
-<h3>{{ t.participant_details }}</h3>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>{{ t.participant }}</th>
-            <th>{{ t.guess }}</th>
-            <th>{{ t.winner }}</th>
-            <th>{{ t.payoff }}</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in rows %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ row.participant }}</td>
-            <td>{{ row.guess_display }}</td>
-            <td>{% if row.is_winner %}{{ t.yes }}{% else %}{{ t.no }}{% endif %}</td>
-            <td>{{ row.payoff }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>{{ t.no_data }}</p>
-{% endif %}
+        <div class="result-chart-wrap admin-chart-wrap">
+            <canvas id="guessHistogram" role="img" aria-label="{{ t.guess_distribution }}"></canvas>
+        </div>
+    </section>
+    {% else %}
+    <section class="result-summary admin-summary" aria-label="{{ t.admin_report_title }}">
+        <div class="result-summary-heading admin-report-header">
+            <div>
+                <p class="result-overline">Beauty Contest</p>
+                <h2 class="admin-title">{{ t.admin_report_title }}</h2>
+            </div>
+            <span class="admin-round-pill">{{ t.admin_round }} {{ round_number }}</span>
+        </div>
+        <p class="admin-empty-text" style="margin-top: 1rem; color: var(--result-muted);">{{ t.no_guesses_histogram }}</p>
+    </section>
+    {% endif %}
+</main>
+
+<style>
+    .admin-report {
+        --result-ink: #173b45;
+        --result-accent: #006b7c;
+        --result-surface: #ffffff;
+        --result-muted: #5d6d75;
+        --result-line: #dce8eb;
+        --result-soft: #edf8f8;
+        color: var(--result-ink);
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.55;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0.5rem 0.5rem 1.5rem;
+    }
+
+    .admin-summary,
+    .admin-chart-card,
+    .admin-empty-card {
+        border: 1px solid var(--result-line);
+        box-shadow: 0 10px 28px rgba(20, 65, 76, 0.08);
+    }
+
+    .admin-summary {
+        background: linear-gradient(135deg, #effafa 0%, #ffffff 65%);
+        border-radius: 22px;
+        color: var(--result-ink);
+        padding: 1.25rem;
+    }
+
+    .admin-report-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .admin-title {
+        color: var(--result-ink);
+        font-size: clamp(1.3rem, 4vw, 1.65rem);
+        font-weight: 750;
+        line-height: 1.2;
+        margin: 0.2rem 0 0;
+    }
+
+    .result-overline {
+        color: var(--result-accent);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .admin-round-pill {
+        align-self: flex-start;
+        background: #edf8f8;
+        border: 1px solid #d0e7ea;
+        border-radius: 999px;
+        color: var(--result-accent);
+        display: inline-block;
+        font-size: 0.82rem;
+        font-weight: 750;
+        padding: 0.3rem 0.75rem;
+        white-space: nowrap;
+    }
+
+    .admin-metrics-grid {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .result-metric {
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid #dcebed;
+        border-radius: 14px;
+        min-width: 0;
+        padding: 0.75rem 0.65rem;
+    }
+
+    .result-metric-label {
+        color: var(--result-muted);
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 0.28rem;
+        text-transform: uppercase;
+    }
+
+    .result-metric strong {
+        color: var(--result-ink);
+        display: block;
+        font-size: clamp(1.2rem, 4.5vw, 1.65rem);
+        line-height: 1.05;
+        overflow-wrap: anywhere;
+    }
+
+    .result-metric--winning {
+        border-color: #9fd7b2;
+    }
+
+    .result-metric--winning strong {
+        color: #17623a;
+    }
+
+    .admin-chart-card {
+        background: var(--result-surface);
+        border-radius: 20px;
+        margin-top: 1rem;
+        padding: 1.15rem;
+    }
+
+    .admin-chart-card h3 {
+        color: var(--result-ink);
+        font-size: 1.12rem;
+        font-weight: 750;
+        margin: 0 0 0.5rem;
+    }
+
+    .admin-chart-key {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 0.85rem 0 1rem;
+    }
+
+    .admin-chart-key > span {
+        align-items: center;
+        background: #f7fafb;
+        border: 1px solid #e5eef0;
+        border-radius: 10px;
+        color: #38535c;
+        display: flex;
+        font-size: 0.78rem;
+        gap: 0.35rem;
+        line-height: 1.25;
+        min-width: 0;
+        padding: 0.45rem 0.6rem;
+    }
+
+    .admin-chart-key strong {
+        color: var(--result-ink);
+    }
+
+    .chart-key {
+        display: inline-block;
+        flex: 0 0 auto;
+        height: 0.85rem;
+        width: 0.85rem;
+    }
+
+    .chart-key-winning {
+        background: #2e7d32;
+        border-radius: 3px;
+    }
+
+    .chart-key-target {
+        border-top: 3px dashed #d97706;
+        height: 0;
+        margin-top: 0.1rem;
+        width: 1rem;
+    }
+
+    .chart-key-count {
+        background: rgba(69, 139, 180, 0.7);
+        border-radius: 3px;
+    }
+
+    .admin-chart-wrap {
+        height: clamp(230px, 48vw, 340px);
+        position: relative;
+        width: 100%;
+    }
+
+    .admin-empty-card {
+        background: var(--result-surface);
+        border-radius: 20px;
+        margin-top: 1rem;
+        padding: 2rem 1rem;
+        text-align: center;
+    }
+
+    .admin-empty-text {
+        color: var(--result-muted);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    @media (max-width: 600px) {
+        .admin-report {
+            padding: 0.35rem 0.35rem 1rem;
+        }
+
+        .admin-summary {
+            border-radius: 18px;
+            padding: 0.95rem;
+        }
+
+        .admin-report-header {
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-bottom: 1rem;
+        }
+
+        .admin-metrics-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+
+        .result-metric {
+            min-height: 74px;
+            padding: 0.65rem 0.6rem;
+        }
+
+        .admin-chart-card {
+            border-radius: 16px;
+            padding: 0.95rem;
+            margin-top: 0.75rem;
+        }
+
+        .admin-chart-key {
+            grid-template-columns: 1fr;
+            gap: 0.35rem;
+        }
+
+        .admin-chart-wrap {
+            height: 235px;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .admin-chart-wrap {
+            height: 215px;
+        }
+
+        .admin-summary,
+        .admin-chart-card {
+            padding: 0.85rem 0.8rem;
+        }
+    }
+</style>
 
 {% if guess_values %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    (function() {
+    (function () {
         const values = {{ guess_values|json }};
+        const winningValue = {{ winning_value|json }};
+        const targetValue = {{ target_value|json }};
         const text = {{ t|json }};
-        if (!values.length) return;
+        if (!values || !values.length) return;
 
         const maxGuess = {{ guess_max }};
         const binSize = 5;
         const binCount = Math.ceil((maxGuess + 1) / binSize);
         const bins = new Array(binCount).fill(0);
-        values.forEach(v => {
+
+        values.forEach(function (v) {
             const idx = Math.min(binCount - 1, Math.floor(v / binSize));
             bins[idx] += 1;
         });
-        const labels = bins.map((_, idx) => {
+
+        const labels = bins.map(function (_, idx) {
             const start = idx * binSize;
             const end = Math.min(maxGuess, start + binSize - 1);
-            return `${start}–${end}`;
+            return start + '–' + end;
         });
 
-        const ctx = document.getElementById('guessHistogram').getContext('2d');
-        new Chart(ctx, {
+        const winningBin = winningValue !== null
+            ? Math.min(binCount - 1, Math.floor(winningValue / binSize))
+            : -1;
+
+        // Target marker vertical dashed line plugin
+        const targetMarker = {
+            id: 'targetMarker',
+            afterDatasetsDraw: function (chart, args, options) {
+                if (options.value === null || options.value === undefined) return;
+                const area = chart.chartArea;
+                const xScale = chart.scales.x;
+                const firstBinCenter = xScale.getPixelForValue(0);
+                const lastBinCenter = xScale.getPixelForValue(chart.data.labels.length - 1);
+                const x = firstBinCenter + (Math.max(0, Math.min(options.max, options.value)) / options.max) * (lastBinCenter - firstBinCenter);
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                ctx.moveTo(x, area.top);
+                ctx.lineTo(x, area.bottom);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#9a5b05';
+                ctx.font = '11px sans-serif';
+                ctx.fillText(text.target_marker, Math.min(x + 4, area.right - 70), area.top + 14);
+                ctx.restore();
+            }
+        };
+
+        const canvas = document.getElementById('guessHistogram');
+        if (!canvas) return;
+
+        const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+        const isMobile = window.matchMedia('(max-width: 600px)').matches;
+        const maxTicks = isNarrow ? 5 : (isMobile ? 7 : 11);
+
+        new Chart(canvas.getContext('2d'), {
             type: 'bar',
             data: {
-                labels,
+                labels: labels,
                 datasets: [{
                     label: text.histogram_participants,
                     data: bins,
-                    backgroundColor: 'rgba(59, 130, 246, 0.65)',
-                    borderColor: 'rgba(30, 64, 175, 0.9)',
-                    borderWidth: 1,
+                    backgroundColor: bins.map(function (_, idx) {
+                        return idx === winningBin ? 'rgba(46, 125, 50, 0.78)' : 'rgba(69, 139, 180, 0.62)';
+                    }),
+                    borderColor: bins.map(function (_, idx) {
+                        return idx === winningBin ? '#1b5e20' : 'rgba(30, 64, 175, 0.9)';
+                    }),
+                    borderWidth: bins.map(function (_, idx) {
+                        return idx === winningBin ? 2 : 1;
+                    }),
+                    borderRadius: 4,
+                    maxBarThickness: 28,
                 }]
             },
+            plugins: [targetMarker],
             options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                interaction: { intersect: false, mode: 'index' },
                 scales: {
                     x: {
-                        title: { display: true, text: text.histogram_guess_interval }
+                        grid: { display: false },
+                        title: {
+                            display: true,
+                            text: text.histogram_guess_interval,
+                            color: '#52616b',
+                            font: { size: isNarrow ? 10 : 11, weight: '600' }
+                        },
+                        ticks: {
+                            autoSkip: true,
+                            autoSkipPadding: 6,
+                            maxRotation: 0,
+                            minRotation: 0,
+                            maxTicksLimit: maxTicks,
+                            color: '#52616b',
+                            font: { size: isNarrow ? 10 : 11 },
+                        }
                     },
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: text.histogram_participants_axis },
-                        ticks: { precision: 0 }
+                        border: { display: false },
+                        grid: { color: 'rgba(82, 97, 107, 0.12)' },
+                        title: {
+                            display: true,
+                            text: text.histogram_participants_axis,
+                            color: '#52616b',
+                            font: { size: isNarrow ? 10 : 11, weight: '600' }
+                        },
+                        ticks: {
+                            color: '#52616b',
+                            precision: 0,
+                            font: { size: isNarrow ? 10 : 11 }
+                        }
                     }
                 },
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    targetMarker: { value: targetValue, max: maxGuess },
+                    tooltip: {
+                        backgroundColor: '#173b45',
+                        cornerRadius: 8,
+                        displayColors: false,
+                        padding: 10,
+                        callbacks: {
+                            title: function (items) {
+                                return text.histogram_guess_interval + ': ' + items[0].label;
+                            }
+                        }
+                    }
                 }
             }
         });

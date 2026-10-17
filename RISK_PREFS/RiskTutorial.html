@@ -1,0 +1,145 @@
+{{ load staticfiles otree }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+<style>
+  .tutorial-question { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid #e7eff1; border-left: 4px solid #8ad0d9; border-radius: 12px; background: #fbfdfd; }
+  .tutorial-question.is-correct { border-left-color: #17623a; border-color: #9fd7b2; background: #eaf8ef; }
+  .tutorial-question.is-wrong { border-left-color: #dc2626; border-color: #fecaca; background: #fee2e2; }
+  .tutorial-feedback { display: none; margin-top: .7rem; }
+  .tutorial-feedback.visible { display: block; }
+  .tutorial-feedback.correct { color: #17623a; }
+  .tutorial-feedback.wrong { color: #b91c1c; }
+  .lottery-table { max-width: 620px; margin: 1.25rem auto 1.5rem; text-align: center; }
+  .lottery-table th { background: #edf8f8; color: #173b45; }
+  .lottery-table th, .lottery-table td { vertical-align: middle; }
+  .coin-outcome { font-size: 1.1rem; }
+</style>
+{{ endblock }}
+
+{{ block content }}
+{% if lang == 'it' %}
+<h1>Breve tutorial sul rischio</h1>
+<div class="otree-card risk-card">
+  <p>Prima di iniziare, rispondi alle cinque domande. Per ciascuna lotteria, una moneta equa viene lanciata: testa e croce hanno probabilità 50%.</p>
+  <table class="table table-bordered lottery-table">
+    <thead><tr><th>Esito del lancio</th><th>Lotteria A</th><th>Lotteria B</th></tr></thead>
+    <tbody>
+      <tr><th class="coin-outcome">🪙 Testa (50%)</th><td><strong>20 €</strong></td><td><strong>30 €</strong></td></tr>
+      <tr><th class="coin-outcome">🪙 Croce (50%)</th><td><strong>10 €</strong></td><td><strong>0 €</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tutorial-question" data-answer="15_15">
+    <strong>1. Quali sono i valori attesi delle lotterie A e B?</strong>
+    <div><label><input type="radio" name="tutorial_ev" value="15_15"> A = 15 €; B = 15 €</label></div>
+    <div><label><input type="radio" name="tutorial_ev" value="10_15"> A = 10 €; B = 15 €</label></div>
+    <div><label><input type="radio" name="tutorial_ev" value="20_30"> A = 20 €; B = 30 €</label></div>
+    <p class="tutorial-feedback correct"><strong>Corretto.</strong> Per A: 0,5 × 10 + 0,5 × 20 = 15 €. Per B: 0,5 × 0 + 0,5 × 30 = 15 €.</p>
+    <p class="tutorial-feedback wrong"><strong>Riprova.</strong> Il valore atteso è la media ponderata: 0,5 × payoff basso + 0,5 × payoff alto.</p>
+  </div>
+  <div class="tutorial-question" data-answer="a_less_risky">
+    <strong>2. Quale affermazione sul rischio è corretta?</strong>
+    <div><label><input type="radio" name="tutorial_riskiness" value="a_less_risky"> A è meno rischiosa di B.</label></div>
+    <div><label><input type="radio" name="tutorial_riskiness" value="same_risk"> A e B hanno lo stesso rischio perché hanno lo stesso valore atteso.</label></div>
+    <div><label><input type="radio" name="tutorial_riskiness" value="b_less_risky"> B è meno rischiosa di A.</label></div>
+    <p class="tutorial-feedback correct"><strong>Corretto.</strong> Le lotterie hanno lo stesso valore atteso, ma B varia da 0 € a 30 €, mentre A varia solo da 10 € a 20 €. B ha quindi risultati più dispersi.</p>
+    <p class="tutorial-feedback wrong"><strong>Riprova.</strong> Il rischio riguarda anche quanto possono variare i risultati, non solo il loro valore atteso.</p>
+  </div>
+  <div class="tutorial-question" data-answer="risk_averse">
+    <strong>3. Se una persona preferisce 14 € certi a una di queste lotterie, come si descrive questa scelta?</strong>
+    <div><label><input type="radio" name="tutorial_averse" value="risk_averse"> Avversa al rischio.</label></div>
+    <div><label><input type="radio" name="tutorial_averse" value="risk_neutral"> Neutrale al rischio.</label></div>
+    <div><label><input type="radio" name="tutorial_averse" value="risk_seeking"> Propensa al rischio.</label></div>
+    <p class="tutorial-feedback correct"><strong>Corretto.</strong> Entrambe le lotterie hanno valore atteso 15 €. Preferire 14 € certi significa rinunciare a 1 € di valore atteso per eliminare l'incertezza: è avversione al rischio.</p>
+    <p class="tutorial-feedback wrong"><strong>Riprova.</strong> Confronta i 14 € certi con il valore atteso di 15 € della lotteria.</p>
+  </div>
+  <div class="tutorial-question" data-answer="risk_seeking">
+    <strong>4. Se una persona preferisce una di queste lotterie a 16 € certi, come si descrive questa scelta?</strong>
+    <div><label><input type="radio" name="tutorial_seeker" value="risk_averse"> Avversa al rischio.</label></div>
+    <div><label><input type="radio" name="tutorial_seeker" value="risk_neutral"> Neutrale al rischio.</label></div>
+    <div><label><input type="radio" name="tutorial_seeker" value="risk_seeking"> Propensa al rischio.</label></div>
+    <p class="tutorial-feedback correct"><strong>Corretto.</strong> La lotteria ha valore atteso 15 €. Sceglierla invece di 16 € certi significa accettare un valore atteso più basso per l'incertezza: è propensione al rischio.</p>
+    <p class="tutorial-feedback wrong"><strong>Riprova.</strong> Confronta i 16 € certi con il valore atteso di 15 € della lotteria.</p>
+  </div>
+  <div class="tutorial-question" data-answer="lower">
+    <strong>5. Una persona più avversa al rischio richiede un importo certo più alto o più basso per rinunciare alla lotteria?</strong>
+    <div><label><input type="radio" name="tutorial_ce" value="higher"> Più alto.</label></div>
+    <div><label><input type="radio" name="tutorial_ce" value="lower"> Più basso.</label></div>
+    <div><label><input type="radio" name="tutorial_ce" value="same"> Lo stesso, indipendentemente dall'avversione al rischio.</label></div>
+    <p class="tutorial-feedback correct"><strong>Corretto.</strong> Una persona più avversa al rischio attribuisce un valore minore a una somma incerta e quindi accetta un importo certo più basso per non giocare la lotteria.</p>
+    <p class="tutorial-feedback wrong"><strong>Riprova.</strong> L'importo certo equivalente rende la persona indifferente tra importo certo e lotteria.</p>
+  </div>
+</div>
+{% else %}
+<h1>Short tutorial on risk</h1>
+<div class="otree-card risk-card">
+  <p>Before starting, answer the five questions below. For each lottery, a fair coin is tossed: Heads and Tails each have a 50% probability.</p>
+  <table class="table table-bordered lottery-table">
+    <thead><tr><th>Coin-toss outcome</th><th>Lottery A</th><th>Lottery B</th></tr></thead>
+    <tbody>
+      <tr><th class="coin-outcome">🪙 Heads (50%)</th><td><strong>€20</strong></td><td><strong>€30</strong></td></tr>
+      <tr><th class="coin-outcome">🪙 Tails (50%)</th><td><strong>€10</strong></td><td><strong>€0</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tutorial-question" data-answer="15_15">
+    <strong>1. What are the expected values of lotteries A and B?</strong>
+    <div><label><input type="radio" name="tutorial_ev" value="15_15"> A = €15; B = €15</label></div>
+    <div><label><input type="radio" name="tutorial_ev" value="10_15"> A = €10; B = €15</label></div>
+    <div><label><input type="radio" name="tutorial_ev" value="20_30"> A = €20; B = €30</label></div>
+    <p class="tutorial-feedback correct"><strong>Correct.</strong> For A: 0.5 × 10 + 0.5 × 20 = €15. For B: 0.5 × 0 + 0.5 × 30 = €15.</p>
+    <p class="tutorial-feedback wrong"><strong>Try again.</strong> Expected value is the probability-weighted average: 0.5 × low payoff + 0.5 × high payoff.</p>
+  </div>
+  <div class="tutorial-question" data-answer="a_less_risky">
+    <strong>2. Which statement about risk is correct?</strong>
+    <div><label><input type="radio" name="tutorial_riskiness" value="a_less_risky"> A is less risky than B.</label></div>
+    <div><label><input type="radio" name="tutorial_riskiness" value="same_risk"> A and B are equally risky because they have the same expected value.</label></div>
+    <div><label><input type="radio" name="tutorial_riskiness" value="b_less_risky"> B is less risky than A.</label></div>
+    <p class="tutorial-feedback correct"><strong>Correct.</strong> The lotteries have the same expected value, but B ranges from €0 to €30 while A ranges only from €10 to €20. B therefore has more spread in its possible outcomes.</p>
+    <p class="tutorial-feedback wrong"><strong>Try again.</strong> Risk concerns how much outcomes can vary, not only their expected value.</p>
+  </div>
+  <div class="tutorial-question" data-answer="risk_averse">
+    <strong>3. If someone prefers €14 for sure to either lottery, how would this choice be described?</strong>
+    <div><label><input type="radio" name="tutorial_averse" value="risk_averse"> Risk averse.</label></div>
+    <div><label><input type="radio" name="tutorial_averse" value="risk_neutral"> Risk neutral.</label></div>
+    <div><label><input type="radio" name="tutorial_averse" value="risk_seeking"> Risk seeking.</label></div>
+    <p class="tutorial-feedback correct"><strong>Correct.</strong> Both lotteries have an expected value of €15. Preferring €14 for sure means giving up €1 of expected value to avoid uncertainty: this is risk aversion.</p>
+    <p class="tutorial-feedback wrong"><strong>Try again.</strong> Compare the sure €14 with the lottery's expected value of €15.</p>
+  </div>
+  <div class="tutorial-question" data-answer="risk_seeking">
+    <strong>4. If someone prefers either lottery to €16 for sure, how would this choice be described?</strong>
+    <div><label><input type="radio" name="tutorial_seeker" value="risk_averse"> Risk averse.</label></div>
+    <div><label><input type="radio" name="tutorial_seeker" value="risk_neutral"> Risk neutral.</label></div>
+    <div><label><input type="radio" name="tutorial_seeker" value="risk_seeking"> Risk seeking.</label></div>
+    <p class="tutorial-feedback correct"><strong>Correct.</strong> The lottery has an expected value of €15. Choosing it instead of €16 for sure means accepting a lower expected value for uncertainty: this is risk seeking.</p>
+    <p class="tutorial-feedback wrong"><strong>Try again.</strong> Compare the sure €16 with the lottery's expected value of €15.</p>
+  </div>
+  <div class="tutorial-question" data-answer="lower">
+    <strong>5. Does a more risk-averse person require a higher or lower certain amount to give up the lottery?</strong>
+    <div><label><input type="radio" name="tutorial_ce" value="higher"> Higher.</label></div>
+    <div><label><input type="radio" name="tutorial_ce" value="lower"> Lower.</label></div>
+    <div><label><input type="radio" name="tutorial_ce" value="same"> The same, regardless of risk aversion.</label></div>
+    <p class="tutorial-feedback correct"><strong>Correct.</strong> A more risk-averse person values an uncertain amount less and therefore accepts a lower certain amount in order not to play the lottery.</p>
+    <p class="tutorial-feedback wrong"><strong>Try again.</strong> The certainty equivalent is the sure amount that makes a person indifferent between that amount and the lottery.</p>
+  </div>
+</div>
+{% endif %}
+<div class="row"><div class="col-md-10 text-end"><button id="tutorial-next" class="otree-btn-next" disabled>{{ t.continue_button }}</button></div></div>
+{{ endblock }}
+
+{{ block scripts }}
+<script>
+const questions = Array.from(document.querySelectorAll('.tutorial-question'));
+const nextButton = document.getElementById('tutorial-next');
+questions.forEach((question) => {
+  question.querySelectorAll('input').forEach((input) => input.addEventListener('change', () => {
+    const correct = input.value === question.dataset.answer;
+    question.classList.toggle('is-correct', correct);
+    question.classList.toggle('is-wrong', !correct);
+    question.querySelector('.tutorial-feedback.correct').classList.toggle('visible', correct);
+    question.querySelector('.tutorial-feedback.wrong').classList.toggle('visible', !correct);
+    nextButton.disabled = !questions.every((item) => item.querySelector('input:checked')?.value === item.dataset.answer);
+  }));
+});
+</script>
+{{ endblock }}

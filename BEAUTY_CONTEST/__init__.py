@@ -2,8 +2,6 @@ from otree.api import *
 import json
 import os
 from hashlib import sha256
-from html import escape
-from textwrap import dedent
 
 try:
     import openai
@@ -21,7 +19,9 @@ It is a simple game where participants are asked to choose a number between 0 an
 This implementation includes:
 - A simple interface for participants to submit their guesses.
 - Automatic calculation of the average guess, target value, and identification of the winner(s).
-- An optional AI commentary feature that provides insights into the results based on the data collected, using the OpenAI API. The commentary is generated in either Italian or English, depending on the session configuration
+- An optional AI feedback feature for individual participant feedback. It is
+  disabled by default and is generated only when the session configuration
+  explicitly enables it.
 """
 
 
@@ -50,7 +50,7 @@ DEFAULT_LANGUAGE = 'it'
 TEXTS = {
     'it': dict(
         start_game='Comincia il gioco',
-        guess_title='La tua stima',
+        guess_title='La tua stima (Round {round_number} di {num_rounds})',
         guess_intro_1='Inserisci il valore desiderato digitandolo nel campo numerico qui sotto.',
         guess_intro_2='Puoi usare le frecce su/giù o scrivere direttamente un numero nel campo.',
         guess_intro_3='Una volta scelta la stima, premi il bottone Conferma che si attiva in basso.',
@@ -58,6 +58,11 @@ TEXTS = {
         chosen_value='Il valore scelto è',
         confirm='Conferma',
         reread_instructions='Clicca qui per rileggere le istruzioni',
+        instructions_title='Istruzioni',
+        instructions_rules='Regole del gioco',
+        your_task='Il tuo compito',
+        how_to_win='Come vincere',
+        number_range_hint='Scegli un numero intero tra 0 e {max_guess}',
         results_title='Risultati',
         average='Valore medio',
         target_value='Valore obiettivo',
@@ -69,7 +74,7 @@ TEXTS = {
         participants_with_winning_number='partecipanti che hanno riportato il numero vincente!',
         you_won='Hai vinto!',
         you_lost='Purtroppo non hai vinto',
-        finish='Concludi',
+        finish='Continua',
         final_results_title='Risultati finali',
         experiment_over="L'esperimento è terminato",
         total_earnings='Il tuo guadagno totale è',
@@ -78,27 +83,19 @@ TEXTS = {
         admin_round='Round',
         guess_distribution='Distribuzione dei guess',
         no_guesses_histogram="Nessun guess registrato per costruire l'istogramma.",
-        group_statistics='Statistiche di gruppo',
-        group_id='Group ID',
-        target_value_column='Target value',
-        best_guess='Best guess',
-        winners_count='# vincitori',
-        participant_details='Dettagli partecipanti',
-        participant='Partecipante',
-        guess='Guess',
-        winner='Vincitore?',
-        payoff='Payoff',
-        yes='Sì',
-        no='No',
-        no_data='Nessun dato disponibile.',
         histogram_participants='Numero di partecipanti',
         histogram_guess_interval='Intervallo di guess',
         histogram_participants_axis='# partecipanti',
-        ai_commentary_title='Commento AI sui risultati',
+        choice_distribution='Dove si colloca la tua scelta?',
+        choice_distribution_intro='L’istogramma mostra le scelte del gruppo. La barra verde contiene il valore vincente; il bordo rosso indica l’intervallo della tua scelta.',
+        winning_value='Valore vincente',
+        your_choice='La tua scelta',
+        target_marker='Valore obiettivo',
+        participant_feedback_title='Feedback sulla tua scelta',
     ),
     'en': dict(
         start_game='Start the game',
-        guess_title='Your guess',
+        guess_title='Your guess (Round {round_number} of {num_rounds})',
         guess_intro_1='Enter your chosen value in the numeric field below.',
         guess_intro_2='You can use the up/down arrows or type a number directly.',
         guess_intro_3='Once you have chosen your guess, press the Confirm button that appears below.',
@@ -106,6 +103,11 @@ TEXTS = {
         chosen_value='The chosen value is',
         confirm='Confirm',
         reread_instructions='Click here to read the instructions again',
+        instructions_title='Instructions',
+        instructions_rules='Game Rules',
+        your_task='Your task',
+        how_to_win='How to win',
+        number_range_hint='Choose a whole number between 0 and {max_guess}',
         results_title='Results',
         average='Average value',
         target_value='Target value',
@@ -117,7 +119,7 @@ TEXTS = {
         participants_with_winning_number='participants who submitted the winning number!',
         you_won='You won!',
         you_lost='Unfortunately, you did not win',
-        finish='Finish',
+        finish='Continue',
         final_results_title='Final results',
         experiment_over='The experiment is over',
         total_earnings='Your total earnings are',
@@ -126,23 +128,15 @@ TEXTS = {
         admin_round='Round',
         guess_distribution='Guess distribution',
         no_guesses_histogram='No guesses recorded to build the histogram.',
-        group_statistics='Group statistics',
-        group_id='Group ID',
-        target_value_column='Target value',
-        best_guess='Best guess',
-        winners_count='# winners',
-        participant_details='Participant details',
-        participant='Participant',
-        guess='Guess',
-        winner='Winner?',
-        payoff='Payoff',
-        yes='Yes',
-        no='No',
-        no_data='No data available.',
         histogram_participants='Number of participants',
         histogram_guess_interval='Guess interval',
         histogram_participants_axis='# participants',
-        ai_commentary_title='AI commentary on results',
+        choice_distribution='Where does your choice sit?',
+        choice_distribution_intro='The histogram shows the group’s choices. The green bar contains the winning value; the red outline marks the interval containing your choice.',
+        winning_value='Winning value',
+        your_choice='Your choice',
+        target_marker='Target value',
+        participant_feedback_title='Feedback on your choice',
     ),
 }
 
@@ -177,63 +171,6 @@ class Subsession(BaseSubsession):
     pass
 
 
-BEAUTY_AI_SYSTEM_PROMPTS = {
-    'it': dedent(
-        """
-        Sei un assistente didattico esperto di economia sperimentale e beauty
-        contest game.
-
-        Devi commentare i risultati aggregati di un Beauty Contest per un
-        report amministrativo oTree in italiano.
-
-        Regole:
-        - Usa solo i dati forniti nel JSON.
-        - Non inventare intenzioni o spiegazioni psicologiche individuali.
-        - Distingui pattern descrittivi e possibili interpretazioni didattiche.
-        - Cita valori numerici quando sono utili.
-        - Mantieni il testo breve e adatto a una discussione in aula.
-        - Produci solo un frammento HTML, non Markdown.
-
-        Struttura richiesta:
-        <h4>Lettura generale</h4>
-        <h4>Distribuzione delle stime</h4>
-            - Commenta su k-level (k=0 (50),1 (33),2 (22),...) e iterazioni strategiche: 50 * (2/3)^k
-        <h4>Target e vincitori</h4>
-        <h4>Spunti per il debriefing</h4>
-            - Quale è la soluzione "razionale" del gioco (equilibrio di Nash=0)? Come si confronta con la media osservata?
-            - Quali pattern di comportamento sono stati osservati? Come si confrontano con le aspettative teoriche?
-         
-        """
-    ).strip(),
-    'en': dedent(
-        """
-        You are a teaching assistant specializing in experimental economics and
-        beauty contest games.
-
-        Comment on the aggregate results of a Beauty Contest for an oTree admin
-        report in English.
-
-        Rules:
-        - Use only the data provided in the JSON.
-        - Do not invent individual intentions or psychological explanations.
-        - Distinguish descriptive patterns from possible teaching interpretations.
-        - Cite numerical values when useful.
-        - Keep the text short and suitable for classroom discussion.
-        - Produce only an HTML fragment, not Markdown.
-
-        Required structure:
-        <h4>General reading</h4>
-        <h4>Distribution of guesses</h4>
-            - Comment on k-level (k=0 (50),1 (33),2 (22),...) and strategic iteration: 50 * (2/3)^k
-        <h4>Target and winners</h4>
-        <h4>Debriefing prompts</h4>
-            - What is the "rational" solution of the game (Nash equilibrium=0)? How does it compare to the observed average?
-            - What behavioral patterns were observed? How do they compare to theoretical expectations?
-        """
-    ).strip(),
-}
-
-
 def _clean_text(value):
     return " ".join(str(value or "").split()).strip()
 
@@ -253,33 +190,6 @@ def _session_openai_settings(session):
     return dict(api_key=api_key, model=model)
 
 
-def _openai_unavailable_reason(session):
-    settings = _session_openai_settings(session)
-    lang = get_language(session)
-    missing_items = []
-
-    if openai is None:
-        if lang == 'en':
-            missing_items.append("the Python package 'openai' is not installed")
-        else:
-            missing_items.append("il pacchetto Python 'openai' non è installato")
-
-    if not settings["api_key"]:
-        if lang == 'en':
-            missing_items.append(
-                "no OpenAI key was found in the session configuration "
-                "('openai_api_key') or in the OPENAI_API_KEY environment variable"
-            )
-        else:
-            missing_items.append(
-                "non è stata trovata alcuna chiave OpenAI nella configurazione "
-                "della sessione ('openai_api_key') o nella variabile d'ambiente "
-                "OPENAI_API_KEY"
-            )
-
-    return "; ".join(missing_items)
-
-
 def _openai_client(session):
     settings = _session_openai_settings(session)
     if openai is None or not settings["api_key"]:
@@ -287,119 +197,348 @@ def _openai_client(session):
     return openai.OpenAI(api_key=settings["api_key"])
 
 
-def _ai_commentary_unavailable_html(session, reason):
-    if get_language(session) == 'en':
+def _ai_commentary_enabled(session):
+    """Return True only when a session explicitly opts in to AI commentary."""
+    return (session.config or {}).get("enable_ai_commentary") is True
+
+
+def _number_for_feedback(value):
+    """Format whole numbers cleanly while keeping meaningful decimal values."""
+    return str(int(value)) if float(value).is_integer() else f"{value:.2f}"
+
+
+def _nearest_reasoning_steps(guess):
+    """Return the closest value in the repeated two-thirds sequence from 50."""
+    benchmarks = [50 * C.MULTIPLIER ** steps for steps in range(9)]
+    steps, value = min(
+        enumerate(benchmarks), key=lambda item: abs(guess - item[1])
+    )
+    return steps, value, abs(guess - value)
+
+
+def _participant_choice_interpretation_html(player):
+    """Relate the submitted number to feasible targets and repeated reasoning."""
+    guess = player.guess
+    max_target = C.MULTIPLIER * C.GUESS_MAX
+    steps, step_value, step_distance = _nearest_reasoning_steps(guess)
+    near_step_value = step_distance <= 3
+
+    if get_language(player) == 'en':
+        if guess > max_target:
+            return (
+                f"<p><strong>A useful boundary:</strong> {guess} is above "
+                f"<strong>{_number_for_feedback(max_target)}</strong>, the highest "
+                "possible target when every choice is at most 100. It therefore "
+                "cannot be the target itself. A value this high can still be closest "
+                "when the group chooses very high numbers, but it is not consistent "
+                "with the repeated two-thirds sequence, which starts at 50 and moves "
+                "downward. That sequence does not give a useful step estimate for "
+                "this choice.</p>"
+            )
+        if guess == 0:
+            return (
+                "<p><strong>Your choice and repeated reasoning:</strong> Starting "
+                "at 50 and repeatedly taking two-thirds makes the estimate smaller "
+                "(about 33, 22, 15, and so on), moving toward 0. Your choice is "
+                "consistent with many steps of this reasoning—roughly 8 or more on "
+                "this simple scale. A single number cannot reveal the exact number "
+                "of steps you considered.</p>"
+            )
+        if near_step_value:
+            step_estimate = (
+                "the starting point, before any two-thirds step"
+                if steps == 0
+                else f"about {steps} two-thirds step{'s' if steps != 1 else ''} "
+                     "from the starting point"
+            )
+            return (
+                f"<p><strong>Your choice and repeated reasoning:</strong> {guess} "
+                f"is close to <strong>{_number_for_feedback(step_value)}</strong> "
+                f"in the sequence 50 → 33 → 22 → 15 → …. That is roughly "
+                f"{step_estimate}. This is only a comparison with the sequence, "
+                "not an exact measure of how you reasoned.</p>"
+            )
         return (
-            "<h4>AI commentary unavailable</h4>"
-            "<p>The experiment data were collected correctly, but the automatic "
-            "commentary cannot be generated right now.</p>"
-            f"<p><strong>Reason:</strong> {escape(reason or 'OpenAI client unavailable')}</p>"
-            "<p>Set <code>openai_api_key</code> in the session configuration, or "
-            "the <code>OPENAI_API_KEY</code> environment variable, to enable the "
-            "commentary.</p>"
+            f"<p><strong>Your choice and repeated reasoning:</strong> {guess} lies "
+            f"between the reference values in the sequence 50 → 33 → 22 → 15 → …. "
+            f"Its closest reference is {_number_for_feedback(step_value)}, about "
+            f"{steps} step{'s' if steps != 1 else ''} from the start. This is a "
+            "rough estimate, not an exact measure of your thinking. It is also "
+            "useful to consider what group average you expected, since the target "
+            "is two-thirds of that average.</p>"
+        )
+
+    if guess > max_target:
+        return (
+            f"<p><strong>Un limite utile:</strong> {guess} è superiore a "
+            f"<strong>{_number_for_feedback(max_target)}</strong>, il valore "
+            "obiettivo massimo possibile quando ogni scelta è al massimo 100. Non "
+            "può quindi coincidere con il valore obiettivo. Un valore così alto può "
+            "comunque essere il più vicino se il gruppo sceglie numeri molto alti, "
+            "ma non segue la sequenza dei due terzi, che parte da 50 e scende. "
+            "Questa sequenza non permette di stimare in modo utile i passaggi per "
+            "una scelta così alta.</p>"
+        )
+    if guess == 0:
+        return (
+            "<p><strong>La tua scelta e il ragionamento ripetuto:</strong> partendo "
+            "da 50 e prendendone ripetutamente i due terzi, la stima diminuisce "
+            "(circa 33, 22, 15 e così via), avvicinandosi a 0. La tua scelta è "
+            "compatibile con molti passaggi di questo ragionamento—circa 8 o più "
+            "su questa scala semplice. Un solo numero non permette di sapere quanti "
+            "passaggi hai considerato esattamente.</p>"
+        )
+    if near_step_value:
+        step_estimate = (
+            "il punto di partenza, prima di applicare i due terzi"
+            if steps == 0
+            else f"circa {steps} passaggi dei due terzi dal punto di partenza"
+        )
+        return (
+            f"<p><strong>La tua scelta e il ragionamento ripetuto:</strong> {guess} "
+            f"è vicino a <strong>{_number_for_feedback(step_value)}</strong> "
+            f"nella sequenza 50 → 33 → 22 → 15 → …. Corrisponde a "
+            f"{step_estimate}. È solo un confronto con la sequenza, non una "
+            "misura esatta del tuo ragionamento.</p>"
         )
     return (
-        "<h4>Commento AI non disponibile</h4>"
-        "<p>I dati dell'esperimento sono stati raccolti correttamente, ma il "
-        "commento automatico non può essere generato in questo momento.</p>"
-        f"<p><strong>Motivo:</strong> {escape(reason or 'client OpenAI non disponibile')}</p>"
-        "<p>Imposta <code>openai_api_key</code> nella configurazione della "
-        "sessione, oppure la variabile d'ambiente <code>OPENAI_API_KEY</code>, "
-        "per abilitare il commento.</p>"
+        f"<p><strong>La tua scelta e il ragionamento ripetuto:</strong> {guess} è "
+        f"compresa tra i valori di riferimento della sequenza 50 → 33 → 22 → 15 → …. "
+        f"Il più vicino è {_number_for_feedback(step_value)}, a circa {steps} "
+        f"pass{'o' if steps == 1 else 'i'} dall'inizio. È una stima approssimativa, "
+        "non una misura esatta del tuo ragionamento. È utile anche considerare "
+        "quale media del gruppo ti aspettavi, dato che l'obiettivo è due terzi di "
+        "quella media.</p>"
     )
 
 
-def _beauty_ai_payload(session, data):
-    guesses = data["guess_values"]
-    summary = dict(
-        total_players=len(data["rows"]),
-        recorded_guesses=len(guesses),
-        missing_guesses=len(data["rows"]) - len(guesses),
-        mean_guess=round(sum(guesses) / len(guesses), 2) if guesses else None,
-        min_guess=min(guesses) if guesses else None,
-        max_guess=max(guesses) if guesses else None,
-        multiplier=C.MULTIPLIER_LABEL,
-        guess_max=C.GUESS_MAX,
+def _participant_strategy_questions_html(player):
+    """Prompt participants to connect their own guess with strategic reasoning."""
+    guess = player.guess
+    best_guess = player.group.best_guess
+    max_target = C.MULTIPLIER * C.GUESS_MAX
+    steps, step_value, step_distance = _nearest_reasoning_steps(guess)
+    near_step_value = step_distance <= 3
+    if get_language(player) == 'en':
+        if guess > max_target:
+            first_question = (
+                f"The target cannot exceed {_number_for_feedback(max_target)}. "
+                f"What did you expect others to choose that made {guess} seem like a good response?"
+            )
+        elif guess == 0:
+            first_question = (
+                "The repeated two-thirds sequence keeps shrinking toward 0. About "
+                "how many times did you apply that idea, and what did you expect "
+                "the other participants to choose?"
+            )
+        elif near_step_value:
+            first_question = (
+                f"Your choice is close to {_number_for_feedback(step_value)}, about "
+                f"{steps} two-thirds step{'s' if steps != 1 else ''} from 50. Does "
+                "that match how many times you applied the idea? What did you expect "
+                "others to choose?"
+            )
+        else:
+            first_question = (
+                f"Your choice is between the reference values in the repeated "
+                f"two-thirds sequence; the nearest is about {steps} steps from 50, "
+                f"near {_number_for_feedback(step_value)}. Where did you stop, and "
+                f"what average did you expect from others when choosing {guess}?"
+            )
+        return (
+            "<h4>Questions for your strategy</h4>"
+            "<ul>"
+            f"<li>{first_question}</li>"
+            f"<li>Taking one more two-thirds step from {_number_for_feedback(step_value)} gives about {_number_for_feedback(step_value * C.MULTIPLIER)}. Would that be closer to this round’s winning value, {best_guess}?</li>"
+            f"<li>In this one-round game, predicting what others will actually choose may matter more than carrying the number sequence all the way down. What does the winning value {best_guess} suggest about the group’s choices?</li>"
+            "</ul>"
+        )
+
+    if guess > max_target:
+        first_question = (
+            f"Il valore obiettivo non può superare {_number_for_feedback(max_target)}. "
+            f"Che cosa ti aspettavi scegliessero gli altri perché {guess} ti sembrasse una buona risposta?"
+        )
+    elif guess == 0:
+        first_question = (
+            "La sequenza ripetuta dei due terzi continua a ridursi verso 0. Quante "
+            "volte hai applicato questa idea, più o meno, e che cosa ti aspettavi "
+            "scegliessero gli altri partecipanti?"
+        )
+    elif near_step_value:
+        first_question = (
+            f"La tua scelta è vicina a {_number_for_feedback(step_value)}, circa "
+            f"{steps} pass{'o' if steps == 1 else 'i'} dei due terzi a partire da 50. "
+            "Questo corrisponde a quante volte hai applicato l'idea? Che cosa ti "
+            "aspettavi scegliessero gli altri?"
+        )
+    else:
+        first_question = (
+            f"La tua scelta è tra i valori di riferimento della sequenza ripetuta "
+            f"dei due terzi; il più vicino è a circa {steps} passaggi da 50, vicino "
+            f"a {_number_for_feedback(step_value)}. Dove ti sei fermato/a e quale "
+            f"media ti aspettavi dagli altri quando hai scelto {guess}?"
+        )
+    return (
+        "<h4>Domande sulla tua strategia</h4>"
+        "<ul>"
+        f"<li>{first_question}</li>"
+        f"<li>Applicando ancora una volta i due terzi a {_number_for_feedback(step_value)} si ottiene circa {_number_for_feedback(step_value * C.MULTIPLIER)}. Sarebbe più vicino al valore vincente di questo round, {best_guess}?</li>"
+        f"<li>In questo gioco a una sola manche, prevedere che cosa sceglieranno davvero gli altri può contare più che portare la sequenza fino in fondo. Che cosa suggerisce il valore vincente {best_guess} sulle scelte del gruppo?</li>"
+        "</ul>"
     )
-    return dict(
-        experiment=dict(
-            name="Beauty Contest",
-            language=get_text(session)["language_name"],
-            rule=(
-                "Participants choose an integer from 0 to 100. The target is "
-                f"{C.MULTIPLIER_LABEL} of the average submitted guess. The "
-                "participant(s) closest to the target split the jackpot."
-            ),
-        ),
-        summary=summary,
-        group_stats=data["group_stats"],
-        participant_rows=data["rows"],
+
+
+def _participant_feedback_fallback(player, guesses):
+    """Give every participant a concise, outcome-specific strategic debrief.
+
+    This is deliberately deterministic: feedback remains useful in classroom
+    sessions that have not opted in to calls to an external AI service.
+    """
+    lang = get_language(player)
+    guess = player.guess
+    target = player.group.target_value
+    best_guess = player.group.best_guess
+    average = sum(guesses) / len(guesses)
+    distance_to_winner = abs(guess - best_guess)
+
+    if lang == 'en':
+        result = (
+            f"<p>You chose <strong>{guess}</strong>. It was "
+            f"<strong>{_number_for_feedback(distance_to_winner)}</strong> away "
+            f"from the winning value, <strong>{best_guess}</strong>. "
+            f"Your choice was {'below' if guess < average else 'above' if guess > average else 'equal to'} "
+            f"the group average ({_number_for_feedback(average)}) and "
+            f"{'below' if guess < target else 'above' if guess > target else 'equal to'} "
+            f"the target ({_number_for_feedback(target)}).</p>"
+        )
+        if player.is_winner:
+            result += "<p><strong>Your choice was the closest to the target in this round.</strong></p>"
+        result += (
+            "<p><strong>The idea behind repeated reasoning:</strong> the target is "
+            "two-thirds of the group average. If you start by expecting an average "
+            "near 50, two-thirds is about 33. If you then expect others to make the "
+            "same adjustment, two-thirds of 33 is about 22, then about 15, and so on "
+            "toward 0. But in this one-round game, predicting what other participants "
+            "will actually choose is often more useful than knowing where this "
+            "sequence would end. A good choice depends on your expectations about "
+            "their average.</p>"
+        )
+        return (
+            result
+            + _participant_choice_interpretation_html(player)
+            + _participant_strategy_questions_html(player)
+        )
+
+    result = (
+        f"<p>Hai scelto <strong>{guess}</strong>. La distanza dal valore vincente, "
+        f"<strong>{best_guess}</strong>, era di "
+        f"<strong>{_number_for_feedback(distance_to_winner)}</strong>. "
+        f"La tua scelta era {'inferiore' if guess < average else 'superiore' if guess > average else 'uguale'} "
+        f"alla media del gruppo ({_number_for_feedback(average)}) e "
+        f"{'inferiore' if guess < target else 'superiore' if guess > target else 'uguale'} "
+        f"al valore obiettivo ({_number_for_feedback(target)}).</p>"
+    )
+    if player.is_winner:
+        result += "<p><strong>La tua scelta è stata la più vicina al valore obiettivo in questo round.</strong></p>"
+    result += (
+        "<p><strong>L'idea del ragionamento ripetuto:</strong> il valore obiettivo "
+        "è due terzi della media del gruppo. Se inizi aspettandoti una media vicina "
+        "a 50, due terzi sono circa 33. Se poi pensi che gli altri facciano lo stesso "
+        "ragionamento, due terzi di 33 sono circa 22, poi circa 15, e così via verso "
+        "0. In questo gioco a una sola manche, però, prevedere che cosa sceglieranno "
+        "davvero gli altri è spesso più utile che sapere dove arriverebbe questa "
+        "sequenza. Per scegliere bene conta la tua previsione della loro media.</p>"
+    )
+    return (
+        result
+        + _participant_choice_interpretation_html(player)
+        + _participant_strategy_questions_html(player)
     )
 
 
-def _beauty_ai_commentary(session, data):
-    if not data["guess_values"]:
-        return ""
-
-    lang = get_language(session)
-    payload = _beauty_ai_payload(session, data)
-    fingerprint = sha256(
-        json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    ).hexdigest()
-    cache_key = "beauty_ai_commentary"
-    cached = session.vars.get(cache_key)
-    if cached and cached.get("fingerprint") == fingerprint:
-        cached_html = cached.get("html", "")
-        if (
-            "AI commentary unavailable" not in cached_html
-            and "Commento AI non disponibile" not in cached_html
-        ):
-            return cached_html
+def _participant_ai_feedback(player, guesses):
+    """Optionally replace the local debrief with a short personalised AI comment."""
+    fallback = _participant_feedback_fallback(player, guesses)
+    choice_interpretation = _participant_choice_interpretation_html(player)
+    strategy_questions = _participant_strategy_questions_html(player)
+    session = player.session
+    if not _ai_commentary_enabled(session):
+        return fallback
 
     client = _openai_client(session)
     if client is None:
-        return _ai_commentary_unavailable_html(session, _openai_unavailable_reason(session))
+        return fallback
 
-    settings = _session_openai_settings(session)
+    lang = get_language(player)
+    steps, step_value, step_distance = _nearest_reasoning_steps(player.guess)
+    payload = dict(
+        chosen_value=player.guess,
+        group_average=round(sum(guesses) / len(guesses), 2),
+        target_value=player.group.target_value,
+        winning_value=player.group.best_guess,
+        is_winner=player.is_winner,
+        multiplier=C.MULTIPLIER_LABEL,
+        maximum_possible_target=round(C.MULTIPLIER * C.GUESS_MAX, 2),
+        estimated_reasoning_steps=dict(
+            steps=steps,
+            reference_value=round(step_value, 2),
+            distance=round(step_distance, 2),
+        ),
+    )
+    fingerprint = sha256(
+        json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    cache_key = f"beauty_ai_feedback_round_{player.round_number}"
+    cached = player.participant.vars.get(cache_key)
+    if cached and cached.get("fingerprint") == fingerprint:
+        cached_html = cached.get("html")
+        return (
+            cached_html + choice_interpretation + strategy_questions
+            if cached_html else fallback
+        )
+
     if lang == 'en':
-        prompt = dedent(
-            f"""
-            Experiment data in JSON format:
-            {json.dumps(payload, ensure_ascii=False, indent=2)}
-
-            Write an interpretive comment for the instructor. Highlight:
-            - the average guess and spread of guesses;
-            - the relation between the average guess, target value, and best guess;
-            - whether responses suggest naïve high guesses or strategic iteration;
-            - winners and payoff distribution;
-            - two or three useful classroom debriefing questions.
-
-            Remember: describe observed patterns, not unobserved intentions.
-            """
-        ).strip()
+        instructions = (
+            "You are a warm experimental-economics teaching assistant. Write only "
+            "two short HTML paragraphs for this participant. Use plain, intuitive "
+            "language and avoid academic game-theory terminology. First comment on "
+            "their chosen value relative to the group outcome and its approximate "
+            "position in the repeated two-thirds sequence starting at 50. Treat the "
+            "provided step estimate only as a rough comparison, not a measure of "
+            "their actual thought process. If the choice exceeds the maximum possible target, explain that it "
+            "cannot itself be the target, without saying it could not be closest. "
+            "Then explain how each repeated two-thirds step makes the estimate "
+            "smaller, and emphasize that in a one-round game predicting what others "
+            "will actually choose may matter more than understanding where the "
+            "sequence would end. Use only the supplied data; do not infer motives."
+        )
+        prompt = f"Round outcome data: {json.dumps(payload, ensure_ascii=False)}"
     else:
-        prompt = dedent(
-            f"""
-            Dati dell'esperimento in formato JSON:
-            {json.dumps(payload, ensure_ascii=False, indent=2)}
-
-            Scrivi un commento interpretativo per il docente. Metti in evidenza:
-            - media e dispersione dei guess;
-            - relazione tra media, target e best guess;
-            - se le risposte suggeriscono guess alti naïve o iterazione strategica;
-            - vincitori e distribuzione dei payoff;
-            - due o tre domande utili per il debriefing in aula.
-
-            Ricorda: descrivi pattern osservati, non intenzioni non osservate.
-            """
-        ).strip()
+        instructions = (
+            "Sei un assistente didattico cordiale di economia sperimentale. Scrivi "
+            "solo due brevi paragrafi HTML per questo partecipante. Usa un linguaggio "
+            "semplice e intuitivo, evitando il gergo accademico di teoria dei giochi. "
+            "Prima commenta il suo valore rispetto all'esito del gruppo e alla sua "
+            "posizione approssimativa nella sequenza ripetuta dei due terzi a partire "
+            "da 50. Presenta il numero di passaggi solo come confronto approssimativo, "
+            "non come misura del ragionamento effettivo. Se supera il valore obiettivo massimo possibile, spiega che non "
+            "può coincidere con il target, senza dire che non potrebbe essere il più "
+            "vicino. Poi spiega come ogni passaggio ripetuto dei due terzi riduca la "
+            "stima e sottolinea che, in una sola manche, prevedere che cosa "
+            "sceglieranno davvero gli altri può contare più che sapere dove "
+            "arriverebbe la sequenza. Usa solo i dati forniti; non attribuire "
+            "intenzioni."
+        )
+        prompt = f"Dati dell'esito: {json.dumps(payload, ensure_ascii=False)}"
 
     try:
+        settings = _session_openai_settings(session)
         try:
             response = client.chat.completions.create(
                 model=settings["model"],
                 messages=[
-                    {"role": "system", "content": BEAUTY_AI_SYSTEM_PROMPTS[lang]},
+                    {"role": "system", "content": instructions},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.35,
@@ -407,69 +546,58 @@ def _beauty_ai_commentary(session, data):
             html = _clean_text(response.choices[0].message.content)
         except Exception:
             response = client.responses.create(
-                model=settings["model"],
-                instructions=BEAUTY_AI_SYSTEM_PROMPTS[lang],
-                input=prompt,
+                model=settings["model"], instructions=instructions, input=prompt
             )
             html = _clean_text(getattr(response, "output_text", ""))
-        if not html:
-            empty_reason = (
-                "the model returned an empty response"
-                if lang == 'en'
-                else "il modello ha restituito una risposta vuota"
-            )
-            return _ai_commentary_unavailable_html(session, empty_reason)
-    except Exception as exc:
-        return _ai_commentary_unavailable_html(session, str(exc))
+    except Exception:
+        return fallback
 
-    session.vars[cache_key] = dict(fingerprint=fingerprint, html=html)
-    return html
+    if not html:
+        return fallback
+    jargon_terms = (
+        "nash",
+        "equilibrium",
+        "equilibria",
+        "equilibrio",
+        "k-level",
+        "level-k",
+        "level k",
+    )
+    if any(term in html.casefold() for term in jargon_terms):
+        return fallback
+    player.participant.vars[cache_key] = dict(fingerprint=fingerprint, html=html)
+    return html + choice_interpretation + strategy_questions
 
 
 def vars_for_admin_report(subsession: Subsession):
-    # Build participant rows and group summary data for the oTree admin report.
-    players = subsession.get_players()
-    rows = []
-    guess_values = []
-    for p in players:
-        # A guess of -99 means the player reached timeout without submitting.
-        if p.guess == -99:
-            guess_display = '— (timeout)'
-        elif p.guess is None:
-            guess_display = '—'
-        else:
-            guess_display = str(p.guess)
-            guess_values.append(p.guess)
-        rows.append(dict(
-            participant=p.participant.label or p.participant.code,
-            guess=p.guess,
-            guess_display=guess_display,
-            is_winner=p.is_winner,
-            payoff=float(p.payoff or 0),
-        ))
-
-    groups = subsession.get_groups()
-    group_stats = [
-        dict(
-            group_id=g.id,
-            target_value=g.field_maybe_none('target_value'),
-            best_guess=g.field_maybe_none('best_guess'),
-            num_winners=g.field_maybe_none('num_winners'),
-        )
-        for g in groups
+    # The administrator sees aggregate outcomes only; this report makes no AI calls.
+    guess_values = [
+        p.guess for p in subsession.get_players() if p.guess not in (None, -99)
     ]
+    groups = subsession.get_groups()
+    winning_value = (
+        groups[0].field_maybe_none('best_guess') if len(groups) == 1 else None
+    )
+    average_value = (
+        round(sum(guess_values) / len(guess_values), 2)
+        if guess_values else None
+    )
+    target_value = (
+        groups[0].field_maybe_none('target_value') if len(groups) == 1 else None
+    )
+    if target_value is None and average_value is not None:
+        target_value = round(C.MULTIPLIER * average_value, 2)
 
-    report_data = dict(
+    return dict(
         **common_template_vars(subsession),
-        rows=rows,
-        group_stats=group_stats,
         guess_values=guess_values,
+        num_guesses=len(guess_values),
+        average_value=average_value,
+        target_value=target_value,
+        winning_value=winning_value,
         guess_max=C.GUESS_MAX,
-        multiplier_label=C.MULTIPLIER_LABEL,
         round_number=subsession.round_number,
     )
-    report_data["ai_commentary_html"] = _beauty_ai_commentary(subsession.session, report_data)
-    return report_data
 
 
 class Group(BaseGroup):
@@ -543,6 +671,10 @@ class Guess(Page):
         return dict(
             common_template_vars(player),
             history=player.participant.vars['history'],
+            guess_title=get_text(player)['guess_title'].format(
+                round_number=player.round_number,
+                num_rounds=C.NUM_ROUNDS,
+            ),
         )
 
     @staticmethod
@@ -567,11 +699,19 @@ class Results(Page):
             if p.guess != -99:
                 sorted_guesses.append(p.guess)
         sorted_guesses = sorted(sorted_guesses)
+        player_guess = player.guess if player.guess != -99 else None
         return dict(
             common_template_vars(player),
             sorted_guesses=sorted_guesses,
             average=round(sum(sorted_guesses) / len(sorted_guesses), 2),
             target_value=player.group.target_value,
+            histogram_values=sorted_guesses,
+            winning_value=player.group.best_guess,
+            player_guess_for_chart=player_guess,
+            participant_feedback_html=(
+                _participant_ai_feedback(player, sorted_guesses)
+                if player_guess is not None else ""
+            ),
         )
 
 page_sequence = [Introduction, Guess, ResultsWaitPage, Results]

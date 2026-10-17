@@ -1,26 +1,62 @@
-<h1>Istruzioni</h1>
-<div class="card">
+<div class="instructions-shell">
+    <div class="instruction-section">
+        <p class="result-overline">{{ t.instructions_rules }}</p>
+        <h3 class="instruction-section-title">
+            <span class="instruction-section-title-icon" aria-hidden="true">🎯</span>
+            {{ t.your_task }}
+        </h3>
+        <p>Dovrai scegliere un numero intero compreso tra <strong>0</strong> e <strong>{{ C.GUESS_MAX }}</strong>.</p>
+        <div class="task-range-card" aria-label="Intervallo di scelta tra 0 e {{ C.GUESS_MAX }}">
+            <span class="range-pill">0</span>
+            <span class="range-track">0, 1, 2, 3, &hellip;, {{ C.GUESS_MAX }}</span>
+            <span class="range-pill">{{ C.GUESS_MAX }}</span>
+        </div>
+    </div>
 
-<h2>Il tuo compito</h2>
-    <p>Dovrai scegliere un numero tra 0 e {{ C.GUESS_MAX }}.</p>
+    <div class="instruction-section">
+        <h3 class="instruction-section-title">
+            <span class="instruction-section-title-icon" aria-hidden="true">🏆</span>
+            {{ t.how_to_win }}
+        </h3>
+        <p>Il vincitore o la vincitrice sarà chi sceglierà il numero più vicino a <strong>{{ C.MULTIPLIER_LABEL }}</strong> della media di tutti i numeri riportati dai partecipanti.</p>
 
-    <p><i>
-        0, 1, 2, 3, ..., {{ C.GUESS_MAX }} </i>
-</p>
+        <div class="instruction-steps">
+            <div class="instruction-step">
+                <span class="step-num" aria-hidden="true">1</span>
+                <div class="step-content">
+                    <strong>Raccolta delle stime</strong>
+                    <span>Vengono raccolti tutti i numeri inviati dai partecipanti.</span>
+                </div>
+            </div>
+            <div class="instruction-step">
+                <span class="step-num" aria-hidden="true">2</span>
+                <div class="step-content">
+                    <strong>Calcolo del valore medio (<em>M</em>)</strong>
+                    <span>Viene calcolata la media aritmetica <em>M</em> di tutti i numeri inviati.</span>
+                </div>
+            </div>
+            <div class="instruction-step">
+                <span class="step-num" aria-hidden="true">3</span>
+                <div class="step-content">
+                    <strong>Calcolo del valore obiettivo (<em>W</em>)</strong>
+                    <span>La media viene moltiplicata per {{ C.MULTIPLIER_LABEL }} (<em>W = M &times; {{ C.MULTIPLIER_LABEL }}</em>).</span>
+                </div>
+            </div>
+            <div class="instruction-step">
+                <span class="step-num" aria-hidden="true">4</span>
+                <div class="step-content">
+                    <strong>Determinazione del vincitore</strong>
+                    <span>Chi ha indicato il numero più vicino a <em>W</em> vince il gioco!</span>
+                </div>
+            </div>
+        </div>
 
-    <h2>Come vincere <span class="iconify" data-icon="bi:emoji-smile" style="font-size: 1.45em; vertical-align: -0.18em;"></span>
-</h2>
-        <p>Il vincitore/vincitrice nel gioco sarà il/la partecipante che sceglierà il numero più vicino a {{ C.MULTIPLIER_LABEL }} della media dei numeri riportati da tutti i partecipanti.
-    </p>
-    <p>Nel dettaglio:</p>
-
-  <ul>
-    <li>Raccoglierò tutti i numeri riportati dai partecipanti</li>
-    <li>Calcolerò il valore medio (<i>M</i>)</li>
-    <li>Moltiplicherò il valore medio <i>M</i> per {{ C.MULTIPLIER_LABEL }} (<i>W = M * {{ C.MULTIPLIER_LABEL }}</i>)</li>
-    <li>Il vincitore sarà chi ha riportato il numero più vicino a W</li>
-  </ul>
-
+        <div class="instruction-target-callout" role="note">
+            <div class="target-callout-icon" aria-hidden="true">🎯</div>
+            <div class="target-callout-content">
+                <span class="target-callout-label">{{ t.target_value }} (<em>W</em>)</span>
+                <strong class="target-callout-formula">{{ t.average }} (<em>M</em>) &times; {{ C.MULTIPLIER_LABEL }}</strong>
+            </div>
+        </div>
+    </div>
 </div>
-
-<br>

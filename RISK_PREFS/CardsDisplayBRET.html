@@ -1,0 +1,100 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.your_cards_title }}
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+{{ endblock }}
+
+{{ block content }}
+
+<div class="otree-card risk-card">
+    <p>{{ bret_decided_cards }}</p>
+    {% if bomb_found %}
+    <p>{{ t.bret_found_bomb }}</p>
+    <p>{{ bret_bomb_payoff }}</p>
+    {% else %}
+    <p>{{ t.bret_no_bomb }}</p>
+    <p>{{ bret_safe_payoff }}</p>
+    {% endif %}
+
+    <div class="cards-container bret-display-grid">
+        {% for i in range(1, 33) %}
+        <div class="card" id="card-{{ i }}">
+            <div class="card-inner">
+                <div class="card-front centered">
+                    <img src="{% static 'RISK_PREFS/card_back.png' %}" alt="{{ t.card_back_alt }}" style="width: 75px; height: 90px;">
+                </div>
+                <div class="card-back centered">
+                    {% if i == bomb_position %}
+                    <img src="{% static 'RISK_PREFS/bomb.png' %}" alt="{{ t.bomb_alt }}" style="width: 75px; height: 80px;">
+                    {% else %}
+                    <img src="{% static 'RISK_PREFS/smiley.png' %}" alt="{{ t.smiley_alt }}" style="width: 75px; height: 80px;">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="row">
+    <br>
+    <div class="col-md-10 text-end">
+        <button id="btn_submit" class="otree-btn-next">{{ t.continue_button }}</button>
+    </div>
+</div>
+
+<audio id="bomb-sound" src="{% static 'RISK_PREFS/bomb_sound.mp3' %}" preload="auto"></audio>
+
+{{ endblock }}
+
+{{ block scripts }}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const cardsFlipped = {{ cards_flipped|safe }};
+        const bombPosition = {{ bomb_position|safe }};
+        const cards = document.querySelectorAll('.card');
+        const bombSound = document.getElementById('bomb-sound');
+        const smileyAlt = {{ t.smiley_alt|json }};
+        const unhappyAlt = {{ t.unhappy_alt|json }};
+
+        let flipCount = 0;
+
+        function flipCard(card) {
+            card.classList.add('flipped');
+            if (card.id === `card-${bombPosition}`) {
+                bombSound.play();
+                changeAllSmileysToUnhappy();
+                return true;
+            }
+            return false;
+        }
+
+        function flipNextCard() {
+            if (flipCount < cardsFlipped) {
+                const bombHit = flipCard(cards[flipCount]);
+                flipCount++;
+                if (!bombHit) {
+                    setTimeout(flipNextCard, 500);
+                }
+            }
+        }
+
+        function changeAllSmileysToUnhappy() {
+            const smileyImages = document.querySelectorAll(`.card-back img[alt="${smileyAlt}"]`);
+            smileyImages.forEach(img => {
+                img.src = "{% static 'RISK_PREFS/unhappy.png' %}";
+                img.alt = unhappyAlt;
+            });
+        }
+
+        flipNextCard();
+    });
+</script>
+
+{{ endblock }}

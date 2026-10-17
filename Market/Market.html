@@ -1,0 +1,386 @@
+{{ block title }}{{ t.double_auction }} — {{ t.round }} {{ player.round_number }}{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{{ static 'market.css' }}">
+{{ endblock }}
+
+{{ block content }}
+<main class="market-shell">
+    <header class="market-header">
+        <div>
+            <div class="eyebrow">{{ t.session }} <strong>{{ session.code }}</strong></div>
+            <h1>{{ t.live_market }} <span>{{ t.round }} {{ player.round_number }}</span></h1>
+        </div>
+        <div class="status-cluster">
+            <span id="statusPill" class="status-pill waiting">{{ t.waiting }}</span>
+            <div class="timer" aria-label="{{ t.time_remaining }}">
+                <small>{{ t.time_left }}</small>
+                <strong id="timer">—:——</strong>
+            </div>
+        </div>
+    </header>
+
+    <div id="errorBox" class="message error-message" hidden></div>
+    <div id="successBox" class="message success-message"
+         role="status" aria-live="polite" hidden></div>
+
+    {{ if is_teacher }}
+    <section id="teacherControls" class="control-card">
+        <div>
+            <div class="eyebrow">{{ t.instructor_controls }}</div>
+            <h2>{{ t.open_when_ready }}</h2>
+            <p>
+                {{ t.places_prefix }} <strong>{{ student_count }}</strong>
+                {{ t.places_suffix }}
+            </p>
+        </div>
+        <div class="control-grid">
+            <label>
+                {{ t.seconds }}
+                <input id="duration" type="number" min="30" max="900" value="{{ default_duration }}">
+            </label>
+            <button id="startButton" type="button" class="primary-button">{{ t.start_round }}</button>
+            <button id="stopButton" type="button" class="danger-button" hidden>{{ t.stop_round }}</button>
+        </div>
+    </section>
+    {{ endif }}
+
+    {{ if not is_teacher }}
+    <section class="identity-card">
+        <div>
+            <div class="eyebrow">{{ t.your_assignment }}</div>
+            <h2 id="identityTitle">{{ t.waiting_instructor }}</h2>
+            <p id="identityText">{{ t.role_value_here }}</p>
+        </div>
+        <div class="profit-block">
+            <small>{{ t.current_profit }}</small>
+            <strong id="myProfit">€0.00</strong>
+        </div>
+    </section>
+    {{ endif }}
+
+    {{ if not is_teacher }}
+    <section class="quote-grid">
+        <article class="quote-card bid-card">
+            <div class="quote-label">{{ t.highest_bid }}</div>
+            <div id="bestBid" class="quote-price">—</div>
+            <div class="quote-caption">{{ t.best_buyer_price }}</div>
+        </article>
+        <div class="spread-marker">
+            <span>{{ t.market }}</span>
+            <i></i>
+        </div>
+        <article class="quote-card ask-card">
+            <div class="quote-label">{{ t.lowest_ask }}</div>
+            <div id="bestAsk" class="quote-price">—</div>
+            <div class="quote-caption">{{ t.best_seller_price }}</div>
+        </article>
+    </section>
+
+    <section id="offerPanel" class="offer-card is-disabled">
+        <div>
+            <div class="eyebrow">{{ t.submit_offer }}</div>
+            <h2 id="offerHeading">{{ t.market_not_open }}</h2>
+            <p id="offerHint">{{ t.wait_start }}</p>
+        </div>
+        <div class="offer-entry">
+            <div class="currency-input">
+                <span>€</span>
+                <input id="offerPrice" type="number" min="0.1" step="0.1"
+                       inputmode="decimal" placeholder="0.0" disabled>
+            </div>
+            <button id="offerButton" type="button" class="primary-button" disabled>
+                {{ t.submit }}
+            </button>
+        </div>
+    </section>
+
+    <section class="dashboard-grid">
+        <article class="panel">
+            <div class="panel-heading">
+                <div>
+                    <div class="eyebrow">{{ t.open_order_book }}</div>
+                    <h2>{{ t.active_offers }}</h2>
+                </div>
+                <span class="live-dot">{{ t.live }}</span>
+            </div>
+            <div class="book-grid">
+                <div>
+                    <h3>{{ t.bids }}</h3>
+                    <div id="bidBook" class="book-list empty-list">{{ t.no_active_bids }}</div>
+                </div>
+                <div>
+                    <h3>{{ t.asks }}</h3>
+                    <div id="askBook" class="book-list empty-list">{{ t.no_active_asks }}</div>
+                </div>
+            </div>
+        </article>
+
+        <article class="panel">
+            <div class="panel-heading">
+                <div>
+                    <div class="eyebrow">{{ t.trade_tape }}</div>
+                    <h2>{{ t.completed_transactions }}</h2>
+                </div>
+                <strong id="tradeCount" class="count-badge">0</strong>
+            </div>
+            <div id="transactionList" class="transaction-list empty-list">
+                {{ t.no_transactions_yet }}
+            </div>
+        </article>
+    </section>
+    {{ endif }}
+
+    {{ if is_teacher }}
+    <section class="panel instructor-panel">
+        <div class="panel-heading">
+            <div>
+                <div class="eyebrow">{{ t.instructor_only }}</div>
+                <h2>{{ t.participants }}</h2>
+            </div>
+            <strong id="participantCount" class="count-badge">0 / {{ student_count }} {{ t.ready }}</strong>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ t.nickname }}</th>
+                        <th>{{ t.status }}</th>
+                    </tr>
+                </thead>
+                <tbody id="participantRows"></tbody>
+            </table>
+        </div>
+    </section>
+    {{ endif }}
+
+    <button id="hiddenNext" class="otree-btn-next" hidden>{{ t.continue_results }}</button>
+</main>
+{{ endblock }}
+
+{{ block scripts }}
+<script>
+(() => {
+    const isTeacher = {{ if is_teacher }}true{{ else }}false{{ endif }};
+    const tr = {{ t|json }};
+    const locale = '{{ locale }}';
+    let latestState = null;
+    let finishedSubmitted = false;
+    let serverClockOffset = null;
+    let marketEndsAt = null;
+    let displayedClock = null;
+
+    const byId = (id) => document.getElementById(id);
+    const money = (value) => value === null || value === undefined
+        ? '—'
+        : new Intl.NumberFormat(locale, {
+            style: 'currency', currency: 'EUR'
+        }).format(value);
+    const escapeHtml = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;').replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    function setMessage(id, text) {
+        const box = byId(id);
+        box.textContent = text || '';
+        box.hidden = !text;
+    }
+
+    function formatClock(seconds) {
+        const value = Math.max(0, Math.ceil(seconds || 0));
+        return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
+    }
+
+    function setClock(text) {
+        if (text === displayedClock) return;
+        displayedClock = text;
+        byId('timer').textContent = text;
+    }
+
+    function updateClock() {
+        if (latestState?.status !== 'active' ||
+                marketEndsAt === null || serverClockOffset === null) {
+            return;
+        }
+        const estimatedServerNow = Date.now() / 1000 + serverClockOffset;
+        setClock(formatClock(marketEndsAt - estimatedServerNow));
+    }
+
+    function renderBook(id, offers, side) {
+        const node = byId(id);
+        if (!offers.length) {
+            node.className = 'book-list empty-list';
+            node.textContent = side === 'bid' ? tr.no_active_bids : tr.no_active_asks;
+            return;
+        }
+        node.className = 'book-list';
+        node.innerHTML = offers.slice(0, 8).map((offer, index) => `
+            <div class="book-row ${index === 0 ? 'best' : ''}">
+                <span>${tr.offer_number}${offer.sequence}</span>
+                <strong>${money(offer.price)}</strong>
+            </div>
+        `).join('');
+    }
+
+    function renderTransactions(transactions) {
+        const node = byId('transactionList');
+        byId('tradeCount').textContent = transactions.length;
+        if (!transactions.length) {
+            node.className = 'transaction-list empty-list';
+            node.textContent = tr.no_transactions_yet;
+            return;
+        }
+        node.className = 'transaction-list';
+        node.innerHTML = [...transactions].reverse().map(tx => `
+            <div class="transaction-row">
+                <span class="transaction-index">#${tx.sequence}</span>
+                <div>
+                    <strong>${money(tx.price)}</strong>
+                    <small>${tx.elapsed.toFixed(1)} ${tr.elapsed_seconds}</small>
+                </div>
+                <time>${tx.elapsed.toFixed(1)}s</time>
+            </div>
+        `).join('');
+    }
+
+    function renderParticipants(participants) {
+        if (!isTeacher) return;
+        const node = byId('participantRows');
+        const readyCount = participants.filter(person => person.joined).length;
+        byId('participantCount').textContent =
+            `${readyCount} / ${participants.length} ${tr.ready}`;
+        node.innerHTML = participants.map(person => `
+            <tr>
+                <td><strong>${escapeHtml(person.nickname)}</strong></td>
+                <td>${person.joined ? tr.joined : tr.not_joined}</td>
+            </tr>
+        `).join('');
+    }
+
+    function renderStudent(state) {
+        if (isTeacher) return;
+        const me = state.me;
+        const panel = byId('offerPanel');
+        const input = byId('offerPrice');
+        const button = byId('offerButton');
+
+        byId('myProfit').textContent = money(me.profit);
+        if (state.status === 'waiting') {
+            byId('identityTitle').textContent = tr.waiting_instructor;
+            byId('identityText').textContent = tr.role_value_on_open;
+            byId('offerHeading').textContent = tr.market_not_open;
+            byId('offerHint').textContent = tr.wait_start;
+        } else if (me.role === 'buyer' || me.role === 'seller') {
+            const isBuyer = me.role === 'buyer';
+            byId('identityTitle').textContent =
+                isBuyer ? tr.you_are_buyer : tr.you_are_seller;
+            byId('identityText').textContent = isBuyer
+                ? tr.max_willingness.replace('{value}', money(me.private_value))
+                : tr.min_acceptable.replace('{value}', money(me.private_value));
+            byId('offerHeading').textContent =
+                isBuyer ? tr.place_bid : tr.post_ask;
+            byId('offerHint').textContent = me.has_traded
+                ? tr.trade_complete.replace('{value}', money(me.traded_price))
+                : isBuyer
+                    ? tr.bid_limit.replace('{value}', money(me.private_value))
+                    : tr.ask_limit.replace('{value}', money(me.private_value));
+            button.textContent = isBuyer ? tr.submit_bid : tr.submit_ask;
+        } else {
+            byId('identityTitle').textContent = tr.not_assigned;
+            byId('identityText').textContent = tr.joined_too_late;
+            byId('offerHeading').textContent = tr.not_assigned;
+            byId('offerHint').textContent = tr.joined_too_late;
+        }
+        const canTrade = state.status === 'active' &&
+            (me.role === 'buyer' || me.role === 'seller') && !me.has_traded;
+        panel.classList.toggle('is-disabled', !canTrade);
+        input.disabled = !canTrade;
+        button.disabled = !canTrade;
+    }
+
+    function renderStatus(state) {
+        const pill = byId('statusPill');
+        pill.className = `status-pill ${state.status}`;
+        pill.textContent = state.status === 'active' ? tr.market_open :
+            state.status === 'finished' ? tr.round_closed : tr.waiting;
+        if (state.status === 'waiting') {
+            marketEndsAt = null;
+            serverClockOffset = null;
+            setClock('—:——');
+        } else if (state.status === 'active') {
+            if (serverClockOffset === null) {
+                serverClockOffset = state.server_time - Date.now() / 1000;
+            }
+            marketEndsAt = state.ends_at;
+            updateClock();
+        } else {
+            marketEndsAt = null;
+            setClock('0:00');
+        }
+    }
+
+    window.liveRecv = function(state) {
+        latestState = state;
+        setMessage('errorBox', state.error);
+        renderStatus(state);
+
+        if (isTeacher) {
+            setMessage('successBox', state.market_notice);
+            renderParticipants(state.participants || []);
+            byId('startButton').hidden = state.status !== 'waiting';
+            byId('stopButton').hidden = state.status !== 'active';
+            ['duration'].forEach(id => {
+                byId(id).disabled = state.status !== 'waiting';
+            });
+        } else {
+            byId('bestBid').textContent = money(state.best_bid);
+            byId('bestAsk').textContent = money(state.best_ask);
+            renderBook('bidBook', state.bids, 'bid');
+            renderBook('askBook', state.asks, 'ask');
+            renderTransactions(state.transactions);
+            renderStudent(state);
+        }
+
+        if (state.status === 'finished' && !finishedSubmitted) {
+            finishedSubmitted = true;
+            setTimeout(() => byId('hiddenNext').click(), 700);
+        }
+    };
+
+    if (isTeacher) {
+        byId('startButton').addEventListener('click', () => {
+            liveSend({
+                type: 'start',
+                duration: byId('duration').value
+            });
+        });
+        byId('stopButton').addEventListener('click', () => {
+            liveSend({type: 'stop'});
+        });
+    } else {
+        const submitOffer = () => {
+            const input = byId('offerPrice');
+            if (!input.value) {
+                setMessage('errorBox', tr.enter_price_first);
+                return;
+            }
+            liveSend({type: 'offer', price: input.value});
+            input.value = '';
+        };
+        byId('offerButton').addEventListener('click', submitOffer);
+        byId('offerPrice').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitOffer();
+            }
+        });
+    }
+
+    setInterval(updateClock, 250);
+    setInterval(() => liveSend({type: 'tick'}), 2000);
+
+    liveSend({type: 'load'});
+})();
+</script>
+{{ endblock }}

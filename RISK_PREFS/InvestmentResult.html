@@ -1,0 +1,24 @@
+{{ load staticfiles otree }}
+
+{{ block title }}
+{{ t.investment_result_title }}
+{{ endblock }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+{{ endblock }}
+
+{{ block content }}
+<div class="otree-card risk-card">
+    <h2>{{ t.investment_result_title }}</h2>
+    <p>{{ investment_chosen }}</p>
+    {% if investment_high_return %}
+    <p>{{ t.investment_result_high }}</p>
+    {% else %}
+    <p>{{ t.investment_result_low }}</p>
+    {% endif %}
+    <p>{{ investment_result_payoff }}</p>
+</div>
+{{ next_button }}
+{{ endblock }}

@@ -1,0 +1,48 @@
+{{ load staticfiles otree }}
+
+{{ block styles }}
+<link rel="stylesheet" href="{% static 'global/styles.css' %}">
+<link rel="stylesheet" href="{% static 'RISK_PREFS/styles.css' %}">
+{{ endblock }}
+
+{{ block content }}
+
+<h1>{{ t.mpl_instructions_title }}</h1>
+
+<div class="otree-card risk-card">
+    <p>{{ t.mpl_instructions_intro }}</p>
+    <p>{{ t.mpl_instructions_example }}</p>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col" colspan="2" style="text-align:center">A</th>
+                <th scope="col" colspan="2" style="text-align:center">B</th>
+                <th scope="col" style="text-align:center">{{ t.my_choice }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th scope="row">1</th>
+                <td>1/10 {{ t.of }} {{ C.MPL_A_H }}</td>
+                <td>9/10 {{ t.of }} {{ C.MPL_A_L }}</td>
+                <td>1/10 {{ t.of }} {{ C.MPL_B_H }}</td>
+                <td>9/10 {{ t.of }} {{ C.MPL_B_L }}</td>
+                <td style="text-align:center; font-weight:bold">A / B</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>{{ mpl_example_text }}</p>
+    <p>{{ mpl_example_text_b }}</p>
+    <p>{{ t.mpl_choices_count }}</p>
+
+    <h3>{{ t.bonus_payment }}</h3>
+    <p>{{ t.mpl_bonus_rule }}</p>
+    <p>{{ t.virtual_earnings }}</p>
+</div>
+
+{{ next_button }}
+
+{{ endblock }}

@@ -1,0 +1,4 @@
+otree>=5.0.0a21
+openai>=1.0.0
+psycopg2-binary>=2.8.4
+

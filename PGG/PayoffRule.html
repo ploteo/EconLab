@@ -1,0 +1,19 @@
+<aside class="pgg-rule-explainer" aria-labelledby="pgg-rule-title">
+  <h3 id="pgg-rule-title">{{ t.payoff_formula_heading }}</h3>
+  <p>{{ t.payoff_formula_intro }}</p>
+
+  <div class="pgg-formula" aria-label="{{ t.payoff_formula_accessible }}">
+    <span>{{ t.payoff_formula_payoff }}</span>
+    <span class="pgg-formula-equals">=</span>
+    <span>E − C<sub>{{ t.payoff_formula_you }}</sub> +</span>
+    <span class="pgg-formula-fraction"><span>{{ Constants.multiplier }} × ΣC</span><span>{{ Constants.players_per_group }}</span></span>
+  </div>
+
+  <div class="pgg-formula-key">
+    <span><strong>E</strong> {{ t.payoff_formula_endowment }}</span>
+    <span><strong>C<sub>{{ t.payoff_formula_you }}</sub></strong> {{ t.payoff_formula_contribution }}</span>
+    <span><strong>ΣC</strong> {{ t.payoff_formula_total }}</span>
+  </div>
+
+  <p class="payoff-rule">{{ t.payoff_rule }}</p>
+</aside>
