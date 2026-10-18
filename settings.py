@@ -4,7 +4,7 @@ SESSION_CONFIGS = [
     dict(
         name='market_ita',
         display_name='Market (ITA)',
-        app_sequence=['Market'],
+        app_sequence=['MARKET'],
         num_demo_participants=7,
         openai_api_key=environ.get('OPENAI_API_KEY'),
         openai_market_model='gpt-5.4-mini',
@@ -15,7 +15,7 @@ SESSION_CONFIGS = [
     dict(
         name='market_eng',
         display_name='Market (ENG)',
-        app_sequence=['Market'],
+        app_sequence=['MARKET'],
         num_demo_participants=7,
         openai_api_key=environ.get('OPENAI_API_KEY'),
         openai_market_model='gpt-5.4-mini',

@@ -1106,18 +1106,6 @@ def _ai_feedback_unavailable_html(source, reason):
     )
 
 
-def _ai_group_feedback_pending_html(source, total_players, completed_mpl, completed_bret, completed_investment, completed_survey):
-    t = get_text(source)
-    return (
-        f"<h4>{t['ai_group_pending_title']}</h4>"
-        f"<p>{t['ai_group_pending_body']}</p>"
-        f"<p>{t['completed_mpl']}: <strong>{completed_mpl}</strong> / {total_players}. "
-        f"{t['completed_bret']}: <strong>{completed_bret}</strong> / {total_players}. "
-        f"{t['completed_investment']}: <strong>{completed_investment}</strong> / {total_players}. "
-        f"{t['completed_survey']}: <strong>{completed_survey}</strong> / {total_players}.</p>"
-    )
-
-
 def _risk_prefs_player_payload(player: Player):
     set_bret_crra(player)
     update_total_payoff(player)
@@ -1233,110 +1221,6 @@ def _risk_prefs_individual_ai_feedback(player: Player):
         return _ai_feedback_unavailable_html(player, str(exc))
 
     player.participant.vars[cache_key] = dict(fingerprint=fingerprint, html=html)
-    return html
-
-
-def _risk_prefs_group_ai_payload(session, data):
-    return dict(
-        experiment=dict(
-            name="Risk Preferences",
-            tasks=["MPL_HL", "BRET", "INVESTMENT"],
-            total_players=data["total_players"],
-            bret_num_cards=C.BRET_NUM_CARDS,
-            bret_fixed_payoff=C.BRET_ENDOWMENT,
-            bret_card_value=C.BRET_CARD_VALUE,
-            bret_risk_neutral_cards=C.BRET_RISK_NEUTRAL_CARDS,
-            crra_note="CRRA coefficients are midpoint proxies from estimated intervals.",
-        ),
-        completion=dict(
-            completed_mpl=data["completed_mpl"],
-            completed_bret=data["completed_bret"],
-            completed_investment=data["completed_investment"],
-            completed_survey=data["completed_survey"],
-            inconsistent_mpl=data["inconsistent_mpl"],
-        ),
-        summary=dict(
-            mpl_crra_n=data["mpl_crra_n"],
-            bret_crra_n=data["bret_crra_n"],
-            paired_crra_n=data["scatter_n"],
-            mpl_crra_mean=data["mpl_crra_mean"],
-            bret_crra_mean=data["bret_crra_mean"],
-        ),
-        mpl_rows=data["mpl_rows"],
-        bret_rows=[row for row in data["bret_rows"] if row["count"]],
-        investment_rows=[row for row in data["investment_rows"] if row["count"]],
-        crra_histogram=data["crra_histogram"],
-        quadrant_counts=data["quadrant_counts"],
-        scatter_points=data["scatter_points"],
-    )
-
-
-def _risk_prefs_group_ai_feedback(session, data):
-    if not data["all_finished"]:
-        return _ai_group_feedback_pending_html(
-            session,
-            data["total_players"],
-            data["completed_mpl"],
-            data["completed_bret"],
-            data["completed_investment"],
-            data["completed_survey"],
-        )
-    if not data["total_players"]:
-        return ""
-
-    payload = _risk_prefs_group_ai_payload(session, data)
-    lang = get_language(session)
-    fingerprint = sha256(
-        json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    ).hexdigest()
-    cache_key = "risk_prefs_group_ai_feedback"
-    cached = session.vars.get(cache_key)
-    if cached and cached.get("fingerprint") == fingerprint:
-        cached_html = cached.get("html", "")
-        if "AI-mediated feedback unavailable" not in cached_html:
-            return cached_html
-
-    client = _openai_client(session)
-    if client is None:
-        return _ai_feedback_unavailable_html(session, _openai_unavailable_reason(session))
-
-    settings = _session_openai_settings(session)
-    prompt = dedent(
-        f"""
-        Aggregate experiment data in JSON format:
-        {json.dumps(payload, ensure_ascii=False, indent=2)}
-
-        Write the feedback in {'Italian' if lang == 'it' else 'English'}.
-
-        Write group-level feedback for the instructor/admin report. Highlight:
-        - the distribution of MPL choices across rows;
-        - the distribution of BRET cards turned relative to the risk-neutral
-          benchmark of {C.BRET_RISK_NEUTRAL_CARDS};
-        - the distribution of investment amounts from 0 to {C.INVESTMENT_ENDOWMENT};
-        - the distribution of CRRA proxy estimates in the two tasks;
-        - how many participants fall into each CRRA scatterplot quadrant;
-        - classroom debriefing questions that connect the two elicitation tasks.
-
-        Remember: describe observed patterns, not unobserved motives.
-        """
-    ).strip()
-
-    try:
-        response = client.chat.completions.create(
-            model=settings["model"],
-            messages=[
-                {"role": "system", "content": RISK_PREFS_AI_SYSTEM_PROMPTS['group']},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.35,
-        )
-        html = _clean_text(response.choices[0].message.content)
-        if not html:
-            return _ai_feedback_unavailable_html(session, "the model returned an empty response")
-    except Exception as exc:
-        return _ai_feedback_unavailable_html(session, str(exc))
-
-    session.vars[cache_key] = dict(fingerprint=fingerprint, html=html)
     return html
 
 

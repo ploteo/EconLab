@@ -11,6 +11,7 @@
     const multiplier = Number(explainer.dataset.multiplier);
     const players = Number(explainer.dataset.players);
     const locale = explainer.dataset.locale === 'it' ? 'it-IT' : 'en';
+    const pointsUnit = explainer.dataset.pointsUnit || (explainer.dataset.locale === 'it' ? 'punti' : 'points');
     const inputs = Array.from(explainer.querySelectorAll('[data-contribution]'));
     const outputs = Array.from(explainer.querySelectorAll('[data-output]'));
 
@@ -38,7 +39,7 @@
       const payoff = amountKept + individualShare;
 
       contributions.forEach((value, index) => {
-        outputs[index].textContent = `${formatNumber(value, locale)} E`;
+        outputs[index].textContent = `${formatNumber(value, locale)} ${pointsUnit}`;
         inputs[index].style.setProperty('--pgg-fill', `${(value / endowment) * 100}%`);
         const bar = explainer.querySelector(`[data-bar="${index}"]`);
         if (bar) {

@@ -192,6 +192,10 @@
         return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
     }
 
+    let lastExpiryTickAt = 0;
+    let offerPending = false;
+    let offerPendingTimer = null;
+
     function setClock(text) {
         if (text === displayedClock) return;
         displayedClock = text;
@@ -203,8 +207,14 @@
                 marketEndsAt === null || serverClockOffset === null) {
             return;
         }
-        const estimatedServerNow = Date.now() / 1000 + serverClockOffset;
-        setClock(formatClock(marketEndsAt - estimatedServerNow));
+        const nowMs = Date.now();
+        const estimatedServerNow = nowMs / 1000 + serverClockOffset;
+        const remaining = marketEndsAt - estimatedServerNow;
+        setClock(formatClock(remaining));
+        if (remaining <= 0 && nowMs - lastExpiryTickAt >= 2000) {
+            lastExpiryTickAt = nowMs;
+            liveSend({type: 'tick'});
+        }
     }
 
     function renderBook(id, offers, side) {
@@ -295,8 +305,8 @@
         const canTrade = state.status === 'active' &&
             (me.role === 'buyer' || me.role === 'seller') && !me.has_traded;
         panel.classList.toggle('is-disabled', !canTrade);
-        input.disabled = !canTrade;
-        button.disabled = !canTrade;
+        input.disabled = !canTrade || offerPending;
+        button.disabled = !canTrade || offerPending;
     }
 
     function renderStatus(state) {
@@ -321,6 +331,12 @@
     }
 
     window.liveRecv = function(state) {
+        if (!state || !state.status) return;
+        offerPending = false;
+        if (offerPendingTimer) {
+            clearTimeout(offerPendingTimer);
+            offerPendingTimer = null;
+        }
         latestState = state;
         setMessage('errorBox', state.error);
         renderStatus(state);
@@ -344,7 +360,8 @@
 
         if (state.status === 'finished' && !finishedSubmitted) {
             finishedSubmitted = true;
-            setTimeout(() => byId('hiddenNext').click(), 700);
+            const jitterMs = isTeacher ? 500 : 400 + Math.floor(Math.random() * 900);
+            setTimeout(() => byId('hiddenNext').click(), jitterMs);
         }
     };
 
@@ -360,11 +377,18 @@
         });
     } else {
         const submitOffer = () => {
+            if (offerPending) return;
             const input = byId('offerPrice');
             if (!input.value) {
                 setMessage('errorBox', tr.enter_price_first);
                 return;
             }
+            offerPending = true;
+            byId('offerButton').disabled = true;
+            offerPendingTimer = setTimeout(() => {
+                offerPending = false;
+                if (latestState) renderStudent(latestState);
+            }, 1500);
             liveSend({type: 'offer', price: input.value});
             input.value = '';
         };
@@ -378,7 +402,11 @@
     }
 
     setInterval(updateClock, 250);
-    setInterval(() => liveSend({type: 'tick'}), 2000);
+    setInterval(() => {
+        if (latestState?.status === 'active') {
+            liveSend({type: 'tick'});
+        }
+    }, 15000);
 
     liveSend({type: 'load'});
 })();

@@ -958,18 +958,25 @@ def _display_name(player):
     )
 
 
-def _sync_names(group):
-    for player in group.get_players():
-        player.nickname = _display_name(player)
+def _sync_names(group, players=None):
+    for player in (players if players is not None else group.get_players()):
+        new_name = _display_name(player)
+        if player.field_maybe_none('nickname') != new_name:
+            player.nickname = new_name
 
 
-def _student_players(group):
-    return [p for p in group.get_players() if not _is_teacher(p)]
+def _student_players(group, players=None):
+    all_players = players if players is not None else group.get_players()
+    return [p for p in all_players if not _is_teacher(p)]
 
 
-def _joined_students(group):
+def _joined_students(group, players=None):
     return sorted(
-        [p for p in _student_players(group) if p.participant.vars.get('nickname')],
+        [
+            p
+            for p in _student_players(group, players=players)
+            if p.participant.vars.get('nickname')
+        ],
         key=lambda player: player.id_in_group,
     )
 
@@ -981,8 +988,8 @@ def _active_offers(group, side=None):
     return offers
 
 
-def _best_bid(group):
-    bids = _active_offers(group, 'bid')
+def _best_bid_from(offers):
+    bids = [offer for offer in offers if offer.status == 'active' and offer.side == 'bid']
     return min(
         bids,
         key=lambda offer: (-float(offer.price), offer.timestamp, offer.sequence),
@@ -990,8 +997,8 @@ def _best_bid(group):
     )
 
 
-def _best_ask(group):
-    asks = _active_offers(group, 'ask')
+def _best_ask_from(offers):
+    asks = [offer for offer in offers if offer.status == 'active' and offer.side == 'ask']
     return min(
         asks,
         key=lambda offer: (float(offer.price), offer.timestamp, offer.sequence),
@@ -999,16 +1006,46 @@ def _best_ask(group):
     )
 
 
-def _expire_player_offers(group, player):
-    for offer in _active_offers(group):
-        if offer.player == player:
+def _best_bid(group):
+    return _best_bid_from(_active_offers(group, 'bid'))
+
+
+def _best_ask(group):
+    return _best_ask_from(_active_offers(group, 'ask'))
+
+
+def _expire_player_offers(group, player, active_offers=None):
+    offers = active_offers if active_offers is not None else _active_offers(group)
+    for offer in offers:
+        if offer.status == 'active' and offer.player == player:
             offer.status = 'expired'
 
 
-def _match_market(group):
+def _next_offer_sequence(group):
+    key = f'market_offer_seq_{group.round_number}'
+    current = group.session.vars.get(key)
+    if current is None:
+        current = len(Offer.filter(group=group))
+    next_seq = current + 1
+    group.session.vars[key] = next_seq
+    return next_seq
+
+
+def _next_transaction_sequence(group):
+    key = f'market_tx_seq_{group.round_number}'
+    current = group.session.vars.get(key)
+    if current is None:
+        current = len(Transaction.filter(group=group))
+    next_seq = current + 1
+    group.session.vars[key] = next_seq
+    return next_seq
+
+
+def _match_market(group, active_offers=None):
+    offers = active_offers if active_offers is not None else _active_offers(group)
     while True:
-        bid = _best_bid(group)
-        ask = _best_ask(group)
+        bid = _best_bid_from(offers)
+        ask = _best_ask_from(offers)
         if bid is None or ask is None or bid.price < ask.price:
             return
 
@@ -1031,27 +1068,28 @@ def _match_market(group):
         buyer.payoff = buyer.profit
         seller.payoff = seller.profit
 
-        _expire_player_offers(group, buyer)
-        _expire_player_offers(group, seller)
+        _expire_player_offers(group, buyer, active_offers=offers)
+        _expire_player_offers(group, seller, active_offers=offers)
 
-        existing = Transaction.filter(group=group)
+        now = time.time()
         Transaction.create(
             group=group,
             buyer=buyer,
             seller=seller,
             price=transaction_price,
-            sequence=len(existing) + 1,
-            timestamp=time.time(),
-            elapsed_seconds=max(0, time.time() - group.started_at),
+            sequence=_next_transaction_sequence(group),
+            timestamp=now,
+            elapsed_seconds=max(0, now - group.started_at),
         )
 
 
 def _finish_market(group):
     if group.market_status == 'finished':
-        return
+        return False
     group.market_status = 'finished'
     for offer in _active_offers(group):
         offer.status = 'expired'
+    return True
 
 
 def _close_if_expired(group):
@@ -1060,7 +1098,8 @@ def _close_if_expired(group):
         and group.ends_at
         and time.time() >= group.ends_at
     ):
-        _finish_market(group)
+        return _finish_market(group)
+    return False
 
 
 def _market_schedules(group):
@@ -1182,12 +1221,12 @@ def _summary(group):
     )
 
 
-def _market_notice(group):
+def _market_notice(group, players=None):
     if group.market_status != 'active':
         return None
 
     text = get_text(group)
-    students = _joined_students(group)
+    students = _joined_students(group, players=players)
     unmatched_buyers = [
         player
         for player in students
@@ -1217,9 +1256,50 @@ def _market_notice(group):
     return None
 
 
-def _state_for(group, viewer, error=None):
-    _close_if_expired(group)
-    now = time.time()
+def _shared_student_market_state(group, active_offers=None):
+    offers = (
+        [o for o in active_offers if o.status == 'active']
+        if active_offers is not None
+        else _active_offers(group)
+    )
+    sorted_bids = sorted(
+        [x for x in offers if x.side == 'bid'],
+        key=lambda x: (-float(x.price), x.timestamp, x.sequence),
+    )
+    sorted_asks = sorted(
+        [x for x in offers if x.side == 'ask'],
+        key=lambda x: (float(x.price), x.timestamp, x.sequence),
+    )
+    transactions = sorted(
+        Transaction.filter(group=group),
+        key=lambda tx: tx.sequence,
+    )
+    return dict(
+        best_bid=float(sorted_bids[0].price) if sorted_bids else None,
+        best_ask=float(sorted_asks[0].price) if sorted_asks else None,
+        bids=[
+            dict(price=float(o.price), sequence=o.sequence)
+            for o in sorted_bids[:8]
+        ],
+        asks=[
+            dict(price=float(o.price), sequence=o.sequence)
+            for o in sorted_asks[:8]
+        ],
+        transactions=[
+            dict(
+                sequence=tx.sequence,
+                price=float(tx.price),
+                elapsed=round(tx.elapsed_seconds, 1),
+            )
+            for tx in transactions
+        ],
+    )
+
+
+def _state_for(group, viewer, error=None, shared=None, players=None, now=None):
+    if now is None:
+        _close_if_expired(group)
+        now = time.time()
 
     state = dict(
         status=group.market_status,
@@ -1241,72 +1321,51 @@ def _state_for(group, viewer, error=None):
                 nickname=_display_name(p),
                 joined=bool(p.participant.vars.get('nickname')),
             )
-            for p in _student_players(group)
+            for p in _student_players(group, players=players)
         ]
-        state['market_notice'] = _market_notice(group)
+        state['market_notice'] = _market_notice(group, players=players)
         return state
 
-    best_bid = _best_bid(group)
-    best_ask = _best_ask(group)
-    offers = _active_offers(group)
-    transactions = sorted(
-        Transaction.filter(group=group),
-        key=lambda tx: tx.sequence,
-    )
+    if shared is None:
+        shared = _shared_student_market_state(group)
+
+    private_val = viewer.field_maybe_none('private_value')
+    traded_val = viewer.field_maybe_none('traded_price')
     state.update(
-        best_bid=float(best_bid.price) if best_bid else None,
-        best_ask=float(best_ask.price) if best_ask else None,
-        bids=[
-            dict(price=float(o.price), sequence=o.sequence)
-            for o in sorted(
-                [x for x in offers if x.side == 'bid'],
-                key=lambda x: (-float(x.price), x.timestamp, x.sequence),
-            )
-        ],
-        asks=[
-            dict(price=float(o.price), sequence=o.sequence)
-            for o in sorted(
-                [x for x in offers if x.side == 'ask'],
-                key=lambda x: (float(x.price), x.timestamp, x.sequence),
-            )
-        ],
-        transactions=[
-            dict(
-                sequence=tx.sequence,
-                price=float(tx.price),
-                elapsed=round(tx.elapsed_seconds, 1),
-            )
-            for tx in transactions
-        ],
+        **shared,
         me=dict(
             nickname=_display_name(viewer),
             role=viewer.market_role,
-            private_value=(
-                float(viewer.field_maybe_none('private_value'))
-                if viewer.field_maybe_none('private_value') is not None
-                else None
-            ),
+            private_value=float(private_val) if private_val is not None else None,
             profit=float(viewer.profit),
             has_traded=viewer.has_traded,
-            traded_price=(
-                float(viewer.field_maybe_none('traded_price'))
-                if viewer.field_maybe_none('traded_price') is not None
-                else None
-            ),
+            traded_price=float(traded_val) if traded_val is not None else None,
         ),
     )
     return state
 
 
-def _responses(group, errors=None):
+def _responses(group, errors=None, recipients=None, active_offers=None):
     errors = errors or {}
+    all_players = group.get_players()
+    target_players = recipients if recipients is not None else all_players
+    now = time.time()
+    has_student_target = any(not _is_teacher(p) for p in target_players)
+    shared = (
+        _shared_student_market_state(group, active_offers=active_offers)
+        if has_student_target
+        else None
+    )
     return {
         player.id_in_group: _state_for(
             group,
             player,
             errors.get(player.id_in_group),
+            shared=shared,
+            players=all_players,
+            now=now,
         )
-        for player in group.get_players()
+        for player in target_players
     }
 
 
@@ -1337,7 +1396,8 @@ def _start_market(player, data):
     if group.market_status != 'waiting':
         return text['already_started']
 
-    students = _joined_students(group)
+    all_players = group.get_players()
+    students = _joined_students(group, players=all_players)
     try:
         duration = int(data.get('duration'))
     except (TypeError, ValueError):
@@ -1351,8 +1411,8 @@ def _start_market(player, data):
             maximum=C.MAX_ROUND_SECONDS,
         )
 
-    _sync_names(group)
-    for student in _student_players(group):
+    _sync_names(group, players=all_players)
+    for student in _student_players(group, players=all_players):
         student.market_role = 'unassigned'
         student.private_value = None
         student.profit = cu(0)
@@ -1367,6 +1427,8 @@ def _start_market(player, data):
     buyer_count = sum(role == 'buyer' for role, _ in assignments)
     seller_count = len(assignments) - buyer_count
 
+    group.session.vars[f'market_offer_seq_{group.round_number}'] = 0
+    group.session.vars[f'market_tx_seq_{group.round_number}'] = 0
     group.theoretical_trades = _possible_trades(students)
     group.round_duration = duration
     group.started_at = time.time()
@@ -1397,87 +1459,81 @@ def _parse_price(raw_price):
 def live_market(player, data):
     group = player.group
     text = get_text(player)
-    _close_if_expired(group)
+    expired_now = _close_if_expired(group)
     message_type = data.get('type') if isinstance(data, dict) else None
 
-    if message_type in ('load', 'tick'):
-        return _responses(group)
+    def _error_response(err_msg):
+        if expired_now:
+            return _responses(group, {player.id_in_group: err_msg})
+        return _responses(
+            group,
+            {player.id_in_group: err_msg},
+            recipients=[player],
+        )
+
+    if message_type == 'tick':
+        if expired_now:
+            return _responses(group)
+        if group.market_status == 'finished':
+            return _responses(group, recipients=[player])
+        return {}
+
+    if message_type == 'load':
+        if expired_now:
+            return _responses(group)
+        if not _is_teacher(player) and group.market_status == 'waiting':
+            teacher = group.get_player_by_id(1)
+            return _responses(group, recipients=[teacher, player])
+        return _responses(group, recipients=[player])
 
     if message_type == 'start':
         error = _start_market(player, data)
-        return _responses(
-            group,
-            {player.id_in_group: error} if error else None,
-        )
+        if error:
+            return _error_response(error)
+        return _responses(group)
 
     if message_type == 'stop':
         if not _is_teacher(player):
-            return _responses(
-                group,
-                {player.id_in_group: text['only_instructor_stop']},
-            )
+            return _error_response(text['only_instructor_stop'])
         _finish_market(group)
         return _responses(group)
 
     if message_type != 'offer':
-        return _responses(
-            group,
-            {player.id_in_group: text['unknown_action']},
-        )
+        return _error_response(text['unknown_action'])
 
     if group.market_status != 'active':
-        return _responses(
-            group,
-            {player.id_in_group: text['market_not_open_error']},
-        )
+        return _error_response(text['market_not_open_error'])
     if _is_teacher(player) or player.market_role not in ('buyer', 'seller'):
-        return _responses(
-            group,
-            {player.id_in_group: text['not_assigned']},
-        )
+        return _error_response(text['not_assigned'])
     if player.has_traded:
-        return _responses(
-            group,
-            {player.id_in_group: text['already_traded']},
-        )
+        return _error_response(text['already_traded'])
 
     price = _parse_price(data.get('price'))
     if price is None:
-        return _responses(
-            group,
-            {player.id_in_group: text['positive_price']},
-        )
+        return _error_response(text['positive_price'])
     if player.market_role == 'buyer' and price > player.private_value:
-        return _responses(
-            group,
-            {
-                player.id_in_group: text['bid_exceeds'].format(
-                    value=player.private_value
-                )
-            },
+        return _error_response(
+            text['bid_exceeds'].format(value=player.private_value)
         )
     if player.market_role == 'seller' and price < player.private_value:
-        return _responses(
-            group,
-            {
-                player.id_in_group: text['ask_below'].format(
-                    value=player.private_value
-                )
-            },
+        return _error_response(
+            text['ask_below'].format(value=player.private_value)
         )
 
-    offers = Offer.filter(group=group)
-    Offer.create(
+    active_offers = _active_offers(group)
+    _expire_player_offers(group, player, active_offers=active_offers)
+    new_offer = Offer.create(
         group=group,
         player=player,
         side='bid' if player.market_role == 'buyer' else 'ask',
         price=price,
-        sequence=len(offers) + 1,
+        sequence=_next_offer_sequence(group),
         timestamp=time.time(),
         status='active',
     )
-    _match_market(group)
-    return _responses(group)
+    active_offers.append(new_offer)
+    _match_market(group, active_offers=active_offers)
+    return _responses(group, active_offers=active_offers)
 
 
 class Welcome(Page):
@@ -1518,7 +1574,9 @@ class Market(Page):
     @staticmethod
     def vars_for_template(player):
         group = player.group
-        _sync_names(group)
+        new_name = _display_name(player)
+        if player.field_maybe_none('nickname') != new_name:
+            player.nickname = new_name
         students = _student_players(group)
         config = player.participant.vars.get('market_config', {})
         return dict(
