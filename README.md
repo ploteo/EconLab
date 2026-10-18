@@ -29,8 +29,7 @@ EconExp/
 ├── PGG/                     # Repeated Public Goods Game app
 ├── MARKET/                  # Live Continuous Double Auction Market app
 ├── RISK_PREFS/              # Combined Three Risk Tasks app (MPL, BRET, Investment)
-├── _static/                 # Shared CSS stylesheets across apps
-└── docs/                    # Static GitHub Pages project website & working paper
+└── _static/                 # Shared CSS stylesheets across apps
 ```
 
 ---
@@ -94,6 +93,4 @@ export OPENAI_API_KEY="your-openai-api-key"
 export OTREE_ADMIN_PASSWORD="your-admin-password"
 export OTREE_SECRET_KEY="a-long-random-secret-string"
 ```
-
----
 
