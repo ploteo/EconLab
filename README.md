@@ -97,6 +97,3 @@ export OTREE_SECRET_KEY="a-long-random-secret-string"
 
 ---
 
-## Project Website (GitHub Pages)
-
-The [`docs/`](docs/) directory contains a static project website suitable for GitHub Pages (`master` branch → `/docs` folder), summarizing the pedagogical workflow, the four apps, and linking to the companion working paper ([`docs/assets/DRAFT.pdf`](docs/assets/DRAFT.pdf)).
